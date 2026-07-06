@@ -353,8 +353,7 @@
   .rc2-sub{ margin:46px auto 4px; font-family:var(--carve);
     font-size:clamp(11px,2.8vw,13px); letter-spacing:.34em; text-transform:uppercase; color:var(--acc); }
 
-  .rc2-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; margin-top:26px; }
-  @media(max-width:520px){ .rc2-grid{ grid-template-columns:1fr; } }
+  .rc2-grid{ display:grid; grid-template-columns:minmax(0,360px); justify-content:center; gap:16px; margin-top:26px; }
   .rc2-item{ background:rgba(255,255,255,.5); border:1px solid rgba(181,98,42,.34);
     border-radius:12px; padding:32px 24px; backdrop-filter:blur(4px);
     box-shadow:0 18px 40px rgba(150,90,30,.16); }
@@ -369,6 +368,61 @@
     .rc2-item:hover{ transform:translateY(-6px); border-color:rgba(192,67,43,.5);
       box-shadow:0 22px 46px rgba(150,90,30,.24); }
   }
+
+  /* ---------- PAGE 5 : DIRECTIONS ---------- */
+  .page-directions{
+    z-index:5; overflow:hidden; color:#4A2E2A; --acc:#B26A2A; --acc2:#C15B3C;
+    display:flex; align-items:center; justify-content:center; padding:14vh 26px;
+    background:linear-gradient(180deg,#F7EFE3 0%,#F1E2CF 100%);
+    box-shadow:0 -30px 60px rgba(120,70,40,.2);
+  }
+  .dir-wrap{ position:relative; z-index:1; max-width:620px; width:100%; }
+  .dir-head{ text-align:center; margin-bottom:40px; }
+  .dir-head .eyebrow{ font-family:var(--carve); font-size:clamp(11px,2.7vw,13px);
+    letter-spacing:.42em; text-transform:uppercase; color:var(--acc); }
+  .dir-head .rule{ width:min(190px,52vw); height:1px; margin:22px auto 22px;
+    background:linear-gradient(90deg,transparent,var(--acc),transparent); }
+  .dir-head h2{ font-family:var(--display); font-weight:400;
+    font-size:clamp(2rem,7vw,3rem); line-height:1.12; margin-bottom:16px; }
+  .dir-head h2 em{ font-style:italic; color:var(--acc2); }
+  .dir-head .intro{ font-weight:300; font-size:clamp(.96rem,3.6vw,1.06rem);
+    line-height:1.8; opacity:.85; max-width:42ch; margin:0 auto; }
+
+  .venue{ background:#fff; border:1px solid rgba(178,106,42,.26); border-radius:14px;
+    overflow:hidden; box-shadow:0 20px 46px rgba(120,70,40,.16); margin-bottom:26px; }
+  .venue .v-body{ padding:26px 24px 4px; text-align:center; }
+  .v-tag{ font-family:var(--carve); font-size:11px; letter-spacing:.24em;
+    text-transform:uppercase; color:var(--acc2); margin-bottom:10px; }
+  .v-name{ font-family:var(--display); font-size:clamp(1.5rem,5.5vw,2rem); margin-bottom:6px; }
+  .v-addr{ font-size:clamp(.9rem,3.4vw,.98rem); opacity:.72; margin-bottom:18px; line-height:1.6; }
+  .v-map{ display:flex; flex-direction:column; align-items:center; justify-content:center; gap:10px;
+    position:relative; width:100%; aspect-ratio:16/9; text-decoration:none; overflow:hidden; cursor:pointer;
+    background:linear-gradient(135deg,#F5EBDA,#E9D8BF); transition:filter .3s ease; }
+  .v-map::before{ content:""; position:absolute; inset:0; opacity:.5;
+    background:
+      repeating-linear-gradient(0deg, rgba(178,106,42,.10) 0 1px, transparent 1px 30px),
+      repeating-linear-gradient(90deg, rgba(178,106,42,.10) 0 1px, transparent 1px 30px); }
+  .v-map::after{ content:""; position:absolute; inset:0; opacity:.4;
+    background:
+      linear-gradient(58deg, transparent 45%, rgba(178,106,42,.34) 45% 47%, transparent 47%),
+      linear-gradient(-24deg, transparent 60%, rgba(178,106,42,.26) 60% 61.3%, transparent 61.3%); }
+  .v-map .pin{ position:relative; z-index:1; width:40px; height:40px; display:grid; place-items:center;
+    color:var(--acc2); filter:drop-shadow(0 6px 8px rgba(150,60,40,.3)); animation:pinBob 2.4s ease-in-out infinite; }
+  .v-map .pin svg{ width:38px; height:38px; }
+  @keyframes pinBob{ 0%,100%{ transform:translateY(0); } 50%{ transform:translateY(-6px); } }
+  .v-map .v-map-label{ position:relative; z-index:1; font-family:var(--carve);
+    font-size:12px; letter-spacing:.2em; text-transform:uppercase; color:var(--acc); }
+  .v-map:hover{ filter:brightness(.97) saturate(1.05); }
+  .v-map:hover .v-map-label{ color:var(--acc2); }
+  .v-actions{ display:flex; gap:12px; padding:18px 24px 24px; flex-wrap:wrap; justify-content:center; }
+  .btn{ display:inline-flex; align-items:center; gap:8px; font-family:var(--util);
+    font-size:13px; letter-spacing:.05em; text-decoration:none; padding:12px 22px;
+    border-radius:999px; transition:transform .25s ease, box-shadow .25s ease, background .25s ease; }
+  .btn svg{ width:15px; height:15px; }
+  .btn.primary{ background:var(--acc2); color:#fff; box-shadow:0 8px 20px rgba(193,91,60,.3); }
+  .btn.primary:hover{ transform:translateY(-2px); box-shadow:0 12px 26px rgba(193,91,60,.42); }
+  .btn.ghost{ background:transparent; color:var(--acc2); border:1px solid rgba(193,91,60,.5); }
+  .btn.ghost:hover{ background:rgba(193,91,60,.08); transform:translateY(-2px); }
 
   /* =========================================================
      LAST PAGE — INVITATION MESSAGE
@@ -518,7 +572,7 @@
         <div class="eyebrow">The Muhurtham</div>
         <div class="rule"></div>
         <h2>As the sun rises,<br>we begin our <em>forever</em></h2>
-        <div class="mu-sub">the sacred vows at first light</div>
+        <div class="mu-sub">the sacred vows</div>
       </div>
 
       <div class="mu-card reveal">
@@ -530,7 +584,7 @@
           <line x1="32" y1="8" x2="28.5" y2="11.5"/><line x1="11.5" y1="28.5" x2="8" y2="32"/>
         </svg>
         <div class="mu-line"><span class="lbl">When</span><span class="val"><b>Monday, 31 August 2026</b></span></div>
-        <div class="mu-line"><span class="lbl">Muhurtham</span><span class="val mu-time">6:15 &ndash; 7:15 AM &middot; at first light</span></div>
+        <div class="mu-line"><span class="lbl">Muhurtham</span><span class="val mu-time">6:15 &ndash; 7:15 AM</span></div>
         <div class="mu-div"></div>
         <div class="mu-line"><span class="lbl">Where</span><span class="val">EVP Rajeswari Palace,<br>Kumananchavadi, Chennai</span></div>
       </div>
@@ -561,7 +615,7 @@
         <h2>A hometown <em>celebration</em></h2>
         <div class="rc2-when">Sunday, 6 September 2026 &middot; 11:00 AM onwards</div>
         <div class="rc2-where">Kaveri Mahal,<br>Gandhi Nagar, Aruppukottai</div>
-        <p class="rc2-intro">Back in our hometown, we're throwing open the doors for one more joyful gathering &mdash; hearty food, good games, and time together.</p>
+        <p class="rc2-intro">Back in our hometown, we're throwing open the doors for one more joyful gathering &mdash; hearty food, good company, and time together.</p>
       </div>
 
       <div class="rc2-sub reveal">On the Day</div>
@@ -577,18 +631,60 @@
           <div class="nm">Non-Veg Feast</div>
           <div class="ds">A delicious spread of non-veg delicacies</div>
         </div>
+      </div>
+    </div>
+  </section>
 
-        <div class="rc2-item reveal">
-          <svg class="ic" viewBox="0 0 40 40" aria-hidden="true">
-            <rect x="9" y="9" width="22" height="22" rx="4"/>
-            <circle class="fillr" cx="16" cy="16" r="1.9"/>
-            <circle class="fillr" cx="24" cy="16" r="1.9"/>
-            <circle class="fillr" cx="20" cy="20" r="1.9"/>
-            <circle class="fillr" cx="16" cy="24" r="1.9"/>
-            <circle class="fillr" cx="24" cy="24" r="1.9"/>
-          </svg>
-          <div class="nm">Games</div>
-          <div class="ds">Fun games &amp; laughter for all ages</div>
+
+  <!-- ========================= PAGE 5 : DIRECTIONS ========================= -->
+  <section class="page page-directions" id="page-directions">
+    <div class="dir-wrap">
+      <div class="dir-head reveal">
+        <div class="eyebrow">Getting There</div>
+        <div class="rule"></div>
+        <h2>Find your <em>way</em></h2>
+        <p class="intro">Both venues are mapped below &mdash; tap for live directions from wherever you are.</p>
+      </div>
+
+      <!-- Venue 1: EVP Rajeswari Palace -->
+      <div class="venue reveal">
+        <div class="v-body">
+          <div class="v-tag">Reception &amp; Muhurtham</div>
+          <div class="v-name">EVP Rajeswari Palace</div>
+          <div class="v-addr">Kumananchavadi, Chennai, Tamil Nadu</div>
+        </div>
+        <a class="v-map" target="_blank" rel="noopener" title="EVP Rajeswari Palace on Google Maps"
+           href="https://maps.app.goo.gl/QYRwJHd1HaR4oetJ7?g_st=ic">
+          <span class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg></span>
+          <span class="v-map-label">View on Google Maps</span>
+        </a>
+        <div class="v-actions">
+          <a class="btn primary" target="_blank" rel="noopener"
+             href="https://www.google.com/maps/dir/?api=1&amp;destination=EVP+Rajeswari+Palace+Kumananchavadi+Chennai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Get Directions
+          </a>
+        </div>
+      </div>
+
+      <!-- Venue 2: Kaveri Mahal -->
+      <div class="venue reveal">
+        <div class="v-body">
+          <div class="v-tag">Reception &middot; Aruppukottai</div>
+          <div class="v-name">Kaveri Mahal</div>
+          <div class="v-addr">Gandhi Nagar, Aruppukottai, Tamil Nadu</div>
+        </div>
+        <a class="v-map" target="_blank" rel="noopener" title="Kaveri Mahal on Google Maps"
+           href="https://maps.app.goo.gl/S4oebUtxPNsSF2bW9">
+          <span class="pin"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 0 0-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 0 0-7-7zm0 9.5A2.5 2.5 0 1 1 12 6a2.5 2.5 0 0 1 0 5.5z"/></svg></span>
+          <span class="v-map-label">View on Google Maps</span>
+        </a>
+        <div class="v-actions">
+          <a class="btn primary" target="_blank" rel="noopener"
+             href="https://www.google.com/maps/dir/?api=1&amp;destination=Kaveri+Mahal+Gandhi+Nagar+Aruppukottai">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s-7-6.5-7-11a7 7 0 0 1 14 0c0 4.5-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/></svg>
+            Get Directions
+          </a>
         </div>
       </div>
     </div>
