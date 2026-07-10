@@ -2,13 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Reshma &amp; Kesavarajan — The Wedding Invite</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{height:100%;overflow:hidden;background:#f0e7d6;}
-  body{touch-action:none;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
-  canvas{display:block;position:fixed;inset:0;}
+  /* pan-x/pan-y + pinch-zoom: at scale 1 the page has nothing to pan so a
+     one-finger drag reaches our flip handler; once zoomed in, the browser
+     takes the drag to pan the magnified page instead */
+  body{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
+  /* only the book layers are full-screen fixed — NOT the maze canvas */
+  #c,#coil{display:block;position:fixed;inset:0;}
   #c{z-index:0;}
   /* native <img> shown when idle — browser image rendering is sharper than
      canvas compositing on phones with fractional devicePixelRatio */
@@ -16,24 +20,44 @@
   #coil{position:fixed;inset:0;pointer-events:none;z-index:2;}
 
   /* ---- wedding maze popup ---- */
-  #mazeModal{position:fixed;inset:0;z-index:10;display:none;align-items:center;justify-content:center;
-    padding:12px;background:rgba(70,56,34,.5);}
+  /* flex + margin:auto on the card centers it when it fits and lets the modal
+     scroll (top-anchored) when it doesn't, so the maze title is never clipped */
+  #mazeModal{position:fixed;inset:0;z-index:10;display:none;justify-content:center;
+    overflow-y:auto;padding:10px;background:rgba(70,56,34,.5);}
   #mazeModal.open{display:flex;}
-  .mazeCard{position:relative;background:#fbf6ea;border:1px solid #d8c9a8;border-radius:14px;
-    padding:16px 12px 12px;width:min(94vw,440px);max-height:94vh;max-height:94dvh;
-    overflow-y:auto;text-align:center;color:#4a3f2e;
+  /* card hugs the board (width:max-content) so it's always centred, never wider than the screen */
+  .mazeCard{position:relative;margin:auto;background:#fbf6ea;border:1px solid #d8c9a8;border-radius:14px;
+    padding:14px 12px 12px;width:max-content;max-width:96vw;text-align:center;color:#4a3f2e;
     font-family:Georgia,'Times New Roman',serif;
     box-shadow:0 24px 60px -18px rgba(80,60,30,.6);}
   .mazeCard h2{font-size:20px;letter-spacing:.04em;margin-bottom:2px;color:#3c5a3c;}
   .mazeCard p{font-size:12px;opacity:.75;margin-bottom:10px;}
-  #mazeCv{display:block;margin:0 auto;border:2px solid #3c5a3c;border-radius:8px;
-    background:#fdfaf1;touch-action:none;max-width:100%;}
+  /* board size is set in px by JS (fits the viewport); max-width is a safety net */
+  #mazeCv{display:block;margin:0 auto;max-width:100%;
+    border:2px solid #3c5a3c;border-radius:8px;background:#fdfaf1;touch-action:none;}
   #mazeStatus{min-height:22px;font-size:14px;margin-top:8px;color:#3c5a3c;}
   #mazeClose{position:absolute;top:8px;right:10px;width:32px;height:32px;border:none;
     background:none;font-size:20px;color:#8a7449;cursor:pointer;line-height:1;}
   #mazeReset{margin-top:6px;padding:7px 22px;border:1px solid #b39a67;border-radius:20px;
     background:none;color:#8a7449;font-family:inherit;font-size:13px;letter-spacing:.08em;cursor:pointer;}
   #mazeReset:active{background:#f0e6d0;}
+
+  /* ---- word-search popup ---- */
+  #cwModal{position:fixed;inset:0;z-index:10;display:none;justify-content:center;
+    overflow-y:auto;padding:10px;background:rgba(70,56,34,.5);}
+  #cwModal.open{display:flex;}
+  .cwCard{position:relative;margin:auto;background:#fbf6ea;border:1px solid #d8c9a8;border-radius:14px;
+    padding:16px 14px 12px;width:max-content;max-width:96vw;text-align:center;color:#4a3f2e;
+    font-family:Georgia,'Times New Roman',serif;box-shadow:0 24px 60px -18px rgba(80,60,30,.6);}
+  .cwCard h2{font-size:17px;letter-spacing:.06em;text-transform:lowercase;color:#5a4a7a;margin-bottom:2px;}
+  .cwCard p{font-size:12px;opacity:.7;margin-bottom:10px;}
+  #cwCv{display:block;margin:0 auto;touch-action:none;border:1px solid #e0d6c0;border-radius:6px;background:#fdfaf1;}
+  #cwWords{display:flex;flex-wrap:wrap;justify-content:center;gap:4px 12px;margin-top:12px;max-width:340px;}
+  #cwWords span{font-size:12px;letter-spacing:.06em;color:#5a4a7a;transition:color .2s;}
+  #cwWords span.done{color:#a7b09a;text-decoration:line-through;}
+  #cwStatus{min-height:20px;font-size:13px;margin-top:8px;color:#6f51a0;}
+  #cwClose{position:absolute;top:8px;right:10px;width:32px;height:32px;border:none;
+    background:none;font-size:20px;color:#8a7449;cursor:pointer;line-height:1;}
 </style>
 </head>
 <body>
@@ -47,6 +71,17 @@
       <canvas id="mazeCv"></canvas>
       <div id="mazeStatus"></div>
       <button id="mazeReset">Restart</button>
+    </div>
+  </div>
+
+  <div id="cwModal">
+    <div class="cwCard">
+      <button id="cwClose" aria-label="Close">&#10005;</button>
+      <h2>crosswords</h2>
+      <p>Drag across the letters to find each hidden word</p>
+      <canvas id="cwCv"></canvas>
+      <div id="cwWords"></div>
+      <div id="cwStatus"></div>
     </div>
   </div>
 
@@ -142,6 +177,35 @@
     if (!flatShown) return;
     flat.style.display = 'none'; flatShown = false;
     coilCx.clearRect(0, 0, W, H);
+  }
+
+  // ---- pulsing hints over the playable areas (maze p2, word-search p4) ----
+  const HINTS = [
+    { page: 1, x0: 0.5935, y0: 0.4667, x1: 0.9454, y1: 0.785 },   // maze card border
+    { page: 3, x0: 0.0908, y0: 0.1515, x1: 0.4844, y1: 0.457 }    // word-search grid
+  ];
+  let hintDrawn = false;
+  const rrp = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
+  function hintLoop(now){
+    const h = HINTS.find(v => v.page === current);
+    const active = flatShown && h && !anim && !mazeOpen && !cwOpen;
+    if (active){
+      coilCx.clearRect(0, 0, W, H);
+      drawBinding(coilCx);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 480);
+      const x = pr.x + pr.w * h.x0, y = pr.y + pr.h * h.y0,
+            w = pr.w * (h.x1 - h.x0), ht = pr.h * (h.y1 - h.y0), grow = pulse * 1.5;
+      coilCx.save();
+      coilCx.strokeStyle = `rgba(60,90,60,${0.30 + 0.55 * pulse})`;
+      coilCx.lineWidth = 1.2 + pulse * 1.3;
+      rrp(coilCx, x - grow, y - grow, w + grow * 2, ht + grow * 2, 6); coilCx.stroke();
+      coilCx.restore();
+      hintDrawn = true;
+    } else if (hintDrawn){                          // clear the hint, keep the coils
+      hintDrawn = false;
+      if (flatShown){ coilCx.clearRect(0, 0, W, H); drawBinding(coilCx); }
+    }
+    requestAnimationFrame(hintLoop);
   }
 
   const drawPage = (im, r) => {
@@ -346,8 +410,9 @@
   const prev = () => turn(-1);
 
   // ---- finger-follow dragging (corner-aware) ----
+  const zoomed = () => window.visualViewport && window.visualViewport.scale > 1.01;
   cv.addEventListener('pointerdown', e => {
-    if (anim) return;
+    if (anim || zoomed()) return;                  // when zoomed in, let the browser pan
     try { cv.setPointerCapture(e.pointerId); } catch(_){}
     drag = { sx: e.clientX, sy: e.clientY, committed: false, moved: false };
   });
@@ -385,10 +450,9 @@
     const dx = e.clientX - d.sx, dy = e.clientY - d.sy;
 
     if (!d.committed){
-      if (Math.abs(dx) < THRESH && Math.abs(dy) < THRESH){          // a tap
-        if (tapHotspot(e.clientX, e.clientY)) return;
-        (e.clientX > window.innerWidth * 0.5) ? next() : prev();
-      } else if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)){ // vertical flick
+      if (Math.abs(dx) < THRESH && Math.abs(dy) < THRESH){          // a tap — only hotspots, no page flip
+        tapHotspot(e.clientX, e.clientY);
+      } else if (Math.abs(dy) > 40 && Math.abs(dy) > Math.abs(dx)){ // vertical flick still turns
         (dy < 0) ? next() : prev();
       }
       return;
@@ -424,18 +488,25 @@
       if (e.key === 'Escape') closeMaze();
       return;
     }
+    if (cwOpen){ if (e.key === 'Escape') closeCrossword(); return; }
     if (['ArrowRight','ArrowDown','PageDown',' '].includes(e.key)){ e.preventDefault(); next(); }
     if (['ArrowLeft','ArrowUp','PageUp'].includes(e.key)) prev();
   });
 
-  window.addEventListener('resize', resize);
+  window.addEventListener('resize', () => {
+    resize();
+    if (mazeOpen) newMaze();
+    if (cwOpen) newCrossword();
+  });
   resize();
+  requestAnimationFrame(hintLoop);
 
   // =====================================================================
   //  WEDDING MAZE — tap the maze card on page 2 to play
   // =====================================================================
   const HOTSPOTS = [
-    { page: 1, x0: .55, y0: .43, x1: 1, y1: .85, action: openMaze }   // maze card on page-2
+    { page: 1, x0: .55, y0: .43, x1: 1,   y1: .85, action: openMaze },       // maze card on page-2
+    { page: 3, x0: .02, y0: .10, x1: .56, y1: .50, action: openCrossword }   // word-search on page-4
   ];
   function tapHotspot(x, y){
     if (anim) return false;
@@ -471,16 +542,18 @@
   const mBlocked = (x, y) => (MBLOCK[y] >> x) & 1;
 
   function newMaze(){
-    // fit the whole card (board + status + button) inside the viewport
-    const size = Math.min(window.innerWidth * .86, 420,
-                          (window.innerHeight - 170) * MIMG.w / MIMG.h);
+    // pick a board size that fits the viewport (width and height), leaving room
+    // for the close button, status line and Restart button; the card hugs it
+    const vw = (window.visualViewport && window.visualViewport.width)  || window.innerWidth;
+    const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
     const dp = window.devicePixelRatio || 1;
-    const ch = size * MIMG.h / MIMG.w;
-    mcv.width = Math.round(size * dp); mcv.height = Math.round(ch * dp);
-    mcv.style.width = size + 'px'; mcv.style.height = ch + 'px';
+    const cssw = Math.min(vw * .9 - 28, 340, (vh - 150) * MIMG.w / MIMG.h);
+    const cssh = cssw * MIMG.h / MIMG.w;
+    mcv.style.width = cssw + 'px'; mcv.style.height = cssh + 'px';
+    mcv.width = Math.round(cssw * dp); mcv.height = Math.round(cssh * dp);
     mctx.setTransform(dp, 0, 0, dp, 0, 0);
     mctx.imageSmoothingQuality = 'high';
-    MZ = { cw: size, ch, px: MSTART.x, py: MSTART.y, won: false };
+    MZ = { cw: cssw, ch: cssh, px: MSTART.x, py: MSTART.y, won: false };
     statusE.textContent = '';
     drawMaze();
   }
@@ -566,6 +639,134 @@
   document.getElementById('mazeClose').addEventListener('click', closeMaze);
   document.getElementById('mazeReset').addEventListener('click', newMaze);
   modal.addEventListener('click', e => { if (e.target === modal) closeMaze(); });
+
+  // =====================================================================
+  //  WORD SEARCH ("crosswords") — tap the grid on page 4 to play
+  // =====================================================================
+  const CW_GRID = [
+    "RQWERTYUIOPL","RESHUASDFKHJ","ZXCVBNMQWERT","LOVEYUIOPSSD","FGHJKLZXCABN",
+    "FAMILYQWEVTY","UIOPASDFGHJK","BLESSINGSZXC","VCVBNMQWERTF","HAPPINESSUIR",
+    "QWEDDINGASDI","ASDFGHJKLZXE","FOREVERVBNQN","ZXCVBNQWERTD","DESTINYZXCVS"
+  ];
+  // [word, startRow, startCol, dRow, dCol]
+  const CW_WORDS = [
+    ["RESHU",1,0,0,1], ["KESAV",1,9,1,0], ["LOVE",3,0,0,1], ["FAMILY",5,0,0,1],
+    ["DESTINY",14,0,0,1], ["HAPPINESS",9,0,0,1], ["BLESSING",7,0,0,1],
+    ["FOREVER",12,0,0,1], ["FRIENDS",8,11,1,0], ["WEDDING",10,1,0,1]
+  ];
+  const CWR = CW_GRID.length, CWC = CW_GRID[0].length;
+
+  const cwModal = document.getElementById('cwModal');
+  const cwcv    = document.getElementById('cwCv');
+  const cwx     = cwcv.getContext('2d');
+  const cwWordsE= document.getElementById('cwWords');
+  const cwStatusE = document.getElementById('cwStatus');
+  let cwOpen = false, CWG = null, cwSel = null;
+  const cwFound = new Set();
+
+  const cwWordKey = e => {                            // sorted "r,c" cells of a word
+    const [w, r, c, dr, dc] = e, s = [];
+    for (let i = 0; i < w.length; i++) s.push((r+dr*i) + ',' + (c+dc*i));
+    return s.sort().join('|');
+  };
+
+  function newCrossword(){
+    const vw = (window.visualViewport && window.visualViewport.width)  || window.innerWidth;
+    const vh = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+    const dp = window.devicePixelRatio || 1;
+    const cell = Math.min((Math.min(vw*.92, 360) - 32) / CWC, (vh - 230) / CWR, 30);
+    const cw = cell*CWC, ch = cell*CWR;
+    cwcv.style.width = cw+'px'; cwcv.style.height = ch+'px';
+    cwcv.width = Math.round(cw*dp); cwcv.height = Math.round(ch*dp);
+    cwx.setTransform(dp, 0, 0, dp, 0, 0);
+    cwx.imageSmoothingQuality = 'high';
+    CWG = { cell, cw, ch };
+    renderCwWords(); drawCw();
+  }
+
+  function renderCwWords(){
+    cwWordsE.innerHTML = '';
+    CW_WORDS.forEach(e => {
+      const s = document.createElement('span');
+      s.textContent = e[0];
+      if (cwFound.has(e[0])) s.className = 'done';
+      cwWordsE.appendChild(s);
+    });
+    cwStatusE.textContent = cwFound.size === CW_WORDS.length
+      ? 'You found them all! \u{1F48D}'
+      : cwFound.size + ' / ' + CW_WORDS.length + ' found';
+  }
+
+  const cwCenter = (r, c) => ({ x: c*CWG.cell + CWG.cell/2, y: r*CWG.cell + CWG.cell/2 });
+  function cwCapsule(r0, c0, r1, c1, color){
+    const a = cwCenter(r0, c0), b = cwCenter(r1, c1);
+    cwx.save();
+    cwx.strokeStyle = color; cwx.lineWidth = CWG.cell*.82; cwx.lineCap = 'round';
+    cwx.beginPath(); cwx.moveTo(a.x, a.y); cwx.lineTo(b.x, b.y); cwx.stroke();
+    cwx.restore();
+  }
+  function drawCw(){
+    if (!CWG) return;
+    const { cell, cw, ch } = CWG;
+    cwx.clearRect(0, 0, cw, ch);
+    cwx.fillStyle = '#fdfaf1'; cwx.fillRect(0, 0, cw, ch);
+    // found words
+    CW_WORDS.forEach(e => { if (cwFound.has(e[0]))
+      cwCapsule(e[1], e[2], e[1]+e[3]*(e[0].length-1), e[2]+e[4]*(e[0].length-1), 'rgba(154,160,216,.4)'); });
+    // active selection
+    if (cwSel) cwCapsule(cwSel.r0, cwSel.c0, cwSel.r1, cwSel.c1, 'rgba(203,178,119,.5)');
+    // grid lines
+    cwx.strokeStyle = '#e7ddc8'; cwx.lineWidth = 1;
+    for (let i = 0; i <= CWC; i++){ cwx.beginPath(); cwx.moveTo(i*cell, 0); cwx.lineTo(i*cell, ch); cwx.stroke(); }
+    for (let j = 0; j <= CWR; j++){ cwx.beginPath(); cwx.moveTo(0, j*cell); cwx.lineTo(cw, j*cell); cwx.stroke(); }
+    // letters
+    cwx.fillStyle = '#4a3f33'; cwx.font = `${Math.floor(cell*.58)}px Georgia,serif`;
+    cwx.textAlign = 'center'; cwx.textBaseline = 'middle';
+    for (let r = 0; r < CWR; r++) for (let c = 0; c < CWC; c++)
+      cwx.fillText(CW_GRID[r][c], c*cell + cell/2, r*cell + cell/2 + 1);
+  }
+
+  const cwClamp = (v, n) => Math.max(0, Math.min(n-1, v));
+  function cwCellAt(e){
+    const rect = cwcv.getBoundingClientRect();
+    return { r: cwClamp(Math.floor((e.clientY-rect.top)/CWG.cell), CWR),
+             c: cwClamp(Math.floor((e.clientX-rect.left)/CWG.cell), CWC) };
+  }
+  function cwSnap(s, cur){                            // straight line: H, V or diagonal
+    const dx = cur.c - s.c, dy = cur.r - s.r, adx = Math.abs(dx), ady = Math.abs(dy);
+    let dr, dc, len;
+    if (ady <= adx*.4){ dr = 0; dc = Math.sign(dx) || 1; len = adx + 1; }
+    else if (adx <= ady*.4){ dc = 0; dr = Math.sign(dy) || 1; len = ady + 1; }
+    else { dr = Math.sign(dy); dc = Math.sign(dx); len = Math.min(adx, ady) + 1; }
+    return { r0: s.r, c0: s.c, r1: cwClamp(s.r+dr*(len-1), CWR), c1: cwClamp(s.c+dc*(len-1), CWC) };
+  }
+  function cwCheck(sel){
+    const len = Math.max(Math.abs(sel.r1-sel.r0), Math.abs(sel.c1-sel.c0)) + 1;
+    const dr = Math.sign(sel.r1-sel.r0), dc = Math.sign(sel.c1-sel.c0), cells = [];
+    for (let i = 0; i < len; i++) cells.push((sel.r0+dr*i) + ',' + (sel.c0+dc*i));
+    const key = cells.sort().join('|');
+    for (const e of CW_WORDS){
+      if (!cwFound.has(e[0]) && cwWordKey(e) === key){
+        cwFound.add(e[0]); renderCwWords(); break;
+      }
+    }
+  }
+
+  let cwDrag = false, cwStart = null;
+  cwcv.addEventListener('pointerdown', e => {
+    try { cwcv.setPointerCapture(e.pointerId); } catch(_){}
+    cwDrag = true; cwStart = cwCellAt(e);
+    cwSel = { r0: cwStart.r, c0: cwStart.c, r1: cwStart.r, c1: cwStart.c }; drawCw();
+  });
+  cwcv.addEventListener('pointermove', e => { if (cwDrag){ cwSel = cwSnap(cwStart, cwCellAt(e)); drawCw(); } });
+  function cwEnd(){ if (!cwDrag) return; cwDrag = false; if (cwSel) cwCheck(cwSel); cwSel = null; drawCw(); }
+  cwcv.addEventListener('pointerup', cwEnd);
+  cwcv.addEventListener('pointercancel', cwEnd);
+
+  function openCrossword(){ cwOpen = true; cwFound.clear(); cwModal.classList.add('open'); newCrossword(); }
+  function closeCrossword(){ cwOpen = false; cwModal.classList.remove('open'); }
+  document.getElementById('cwClose').addEventListener('click', closeCrossword);
+  cwModal.addEventListener('click', e => { if (e.target === cwModal) closeCrossword(); });
 </script>
 </body>
 </html>
