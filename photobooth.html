@@ -55,6 +55,38 @@
   .dots{position:absolute;top:12px;left:0;right:0;display:flex;gap:8px;justify-content:center;z-index:3;}
   .dots i{width:9px;height:9px;border-radius:50%;background:rgba(255,255,255,.4);box-shadow:0 1px 3px rgba(0,0,0,.4);}
   .dots i.done{background:var(--gold);}
+  /* live tint / vignette preview layer for the chosen filter */
+  .filtoverlay{position:absolute;inset:0;pointer-events:none;z-index:1;transition:background .3s ease;}
+
+  /* old-movie film layer: grain + flickering scratches (live preview) */
+  .film{position:absolute;inset:0;pointer-events:none;z-index:2;display:none;overflow:hidden;}
+  .film.on{display:block;animation:filmFlicker .16s steps(2,end) infinite;}
+  @keyframes filmFlicker{0%{opacity:.82;}50%{opacity:1;}100%{opacity:.9;}}
+  .film .grain{position:absolute;inset:-40%;opacity:.22;mix-blend-mode:overlay;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    animation:grainShift .45s steps(3,end) infinite;}
+  @keyframes grainShift{0%{transform:translate(0,0);}33%{transform:translate(-5%,4%);}66%{transform:translate(4%,-6%);}100%{transform:translate(2%,2%);}}
+  .film .scr{position:absolute;inset:0;mix-blend-mode:screen;
+    background:
+      linear-gradient(90deg,transparent 17%,rgba(255,255,255,.45) 17.3%,transparent 17.6%),
+      linear-gradient(90deg,transparent 41%,rgba(255,255,255,.30) 41.2%,transparent 41.4%),
+      linear-gradient(90deg,transparent 63%,rgba(0,0,0,.5) 63.3%,transparent 63.7%),
+      linear-gradient(90deg,transparent 82%,rgba(255,255,255,.35) 82.2%,transparent 82.5%);
+    animation:scrMove .28s steps(2,end) infinite;}
+  @keyframes scrMove{0%{transform:translateX(0);opacity:.5;}50%{transform:translateX(-1.5%);opacity:.9;}100%{transform:translateX(1%);opacity:.35;}}
+
+  /* filter chips */
+  .filters{display:none;gap:8px;overflow-x:auto;padding:14px 14px 2px;scrollbar-width:none;
+    -webkit-overflow-scrolling:touch;}
+  .filters::-webkit-scrollbar{display:none;}
+  .filters .flabel{flex:0 0 auto;align-self:center;font-family:var(--carve);font-size:11px;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--gold);padding-right:2px;}
+  .chip{flex:0 0 auto;cursor:pointer;border:1px solid var(--line);background:var(--cream);
+    color:var(--soft);font-family:var(--util);font-size:12.5px;letter-spacing:.02em;
+    padding:8px 15px;border-radius:20px;white-space:nowrap;transition:.2s;}
+  .chip:hover{border-color:var(--gold);color:var(--ink);}
+  .chip.active{background:linear-gradient(135deg,var(--ember),var(--rose));color:#fff;border-color:transparent;
+    box-shadow:0 6px 16px -8px rgba(193,91,60,.7);}
 
   .controls{display:flex;gap:12px;align-items:center;justify-content:center;padding:16px;flex-wrap:wrap;}
   .btn{display:inline-flex;align-items:center;gap:8px;cursor:pointer;border:none;
@@ -127,6 +159,8 @@
     <div class="booth">
       <div class="stage">
         <video id="cam" playsinline muted autoplay></video>
+        <div class="filtoverlay" id="filtoverlay"></div>
+        <div class="film" id="film"><span class="grain"></span><span class="scr"></span></div>
         <div class="dots" id="dots" style="display:none"><i></i><i></i><i></i><i></i></div>
         <div class="count" id="count"></div>
         <div class="flash" id="flash"></div>
@@ -134,6 +168,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           <span id="msgtxt">Tap "Start Camera" to begin</span>
         </div>
+      </div>
+
+      <div class="filters" id="filters">
+        <span class="flabel">Filter</span>
       </div>
 
       <div class="controls" id="controls">
@@ -228,6 +266,98 @@
   const result = document.getElementById('result'), strip = document.getElementById('strip');
   let stream = null, facing = 'user', busy = false;
 
+  /* ---- photo filters (vintage & friends) ---- */
+  // css: applied live to the video AND baked into each capture (canvas ctx.filter)
+  // tint / vignette: extra warmth + edge darkening drawn on capture and previewed live
+  const FILTERS = [
+    { id:'original', name:'Original', css:'none' },
+    { id:'vintage',  name:'Vintage',  css:'sepia(0.42) contrast(1.05) brightness(1.04) saturate(0.9)',
+      tint:'rgba(120,80,30,0.12)', vignette:0.5 },
+    { id:'noir',     name:'Noir B&W', css:'grayscale(1) contrast(1.18) brightness(1.03)', vignette:0.42 },
+    { id:'silent',   name:'Old Movie', css:'grayscale(1) contrast(1.32) brightness(1.07) sepia(0.28)',
+      vignette:0.58, film:true },
+    { id:'sepia',    name:'Sepia',    css:'sepia(0.85) contrast(1.03) brightness(1.05)' },
+    { id:'golden',   name:'Golden Hour', css:'saturate(1.22) contrast(1.04) brightness(1.06) sepia(0.16)',
+      tint:'rgba(255,168,60,0.12)' },
+    { id:'fade',     name:'Faded Film', css:'contrast(0.9) brightness(1.1) saturate(0.82) sepia(0.15)', vignette:0.28 },
+    { id:'cool',     name:'Cool',     css:'saturate(1.06) hue-rotate(-12deg) brightness(1.03) contrast(1.05)' },
+    { id:'rose',     name:'Rose',     css:'saturate(1.1) contrast(1.02) brightness(1.05)', tint:'rgba(224,138,106,0.14)' }
+  ];
+  let currentFilter = FILTERS[0];
+  const filtersRow = document.getElementById('filters');
+  const filtOverlay = document.getElementById('filtoverlay');
+  const filmEl = document.getElementById('film');
+
+  function applyLiveFilter(){
+    cam.style.filter = currentFilter.css === 'none' ? '' : currentFilter.css;
+    const layers = [];
+    if (currentFilter.tint) layers.push(`linear-gradient(${currentFilter.tint},${currentFilter.tint})`);
+    if (currentFilter.vignette)
+      layers.push(`radial-gradient(120% 120% at 50% 50%, rgba(0,0,0,0) 46%, rgba(22,12,4,${currentFilter.vignette}) 100%)`);
+    filtOverlay.style.background = layers.join(',');
+    filmEl.classList.toggle('on', !!currentFilter.film);   // old-movie grain + scratches
+  }
+  FILTERS.forEach((f, i) => {
+    const b = document.createElement('button');
+    b.className = 'chip' + (i === 0 ? ' active' : ''); b.type = 'button'; b.textContent = f.name;
+    b.addEventListener('click', () => {
+      currentFilter = f;
+      filtersRow.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
+      b.classList.add('active');
+      applyLiveFilter();
+    });
+    filtersRow.appendChild(b);
+  });
+
+  // paint the chosen filter's tint + vignette onto a captured square canvas
+  function paintFilterOverlay(g, s){
+    if (currentFilter.tint){ g.fillStyle = currentFilter.tint; g.fillRect(0, 0, s, s); }
+    if (currentFilter.vignette){
+      const grd = g.createRadialGradient(s/2, s/2, s*0.34, s/2, s/2, s*0.72);
+      grd.addColorStop(0, 'rgba(0,0,0,0)');
+      grd.addColorStop(1, `rgba(22,12,4,${currentFilter.vignette})`);
+      g.fillStyle = grd; g.fillRect(0, 0, s, s);
+    }
+    if (currentFilter.film) drawFilm(g, s);
+  }
+
+  // bake old-movie grain + random scratches + dust into a captured photo
+  function drawFilm(g, s){
+    // film grain
+    const ns = 256, nc = document.createElement('canvas'); nc.width = nc.height = ns;
+    const ng = nc.getContext('2d'), id = ng.createImageData(ns, ns);
+    for (let i = 0; i < id.data.length; i += 4){
+      const v = (Math.random() * 255) | 0;
+      id.data[i] = id.data[i+1] = id.data[i+2] = v;
+      id.data[i+3] = Math.random() * 60;
+    }
+    ng.putImageData(id, 0, 0);
+    g.save();
+    g.globalCompositeOperation = 'overlay'; g.globalAlpha = 0.5;
+    for (let y = 0; y < s; y += ns) for (let x = 0; x < s; x += ns) g.drawImage(nc, x, y);
+    g.restore();
+    // vertical scratches (broken, random each photo)
+    const n = 3 + (Math.random() * 4 | 0);
+    for (let i = 0; i < n; i++){
+      const x = Math.random() * s, white = Math.random() < 0.7;
+      g.strokeStyle = white ? `rgba(255,255,255,${0.14 + Math.random()*0.28})`
+                            : `rgba(0,0,0,${0.16 + Math.random()*0.26})`;
+      g.lineWidth = 1 + Math.random() * 1.6;
+      g.beginPath();
+      for (let y = 0; y < s; ){
+        const seg = 24 + Math.random() * 140;
+        if (Math.random() < 0.82){ const jx = x + (Math.random()*2-1); g.moveTo(jx, y); g.lineTo(jx, y + seg); }
+        y += seg + Math.random() * 46;
+      }
+      g.stroke();
+    }
+    // dust specks
+    for (let i = 0, m = (s / 55) | 0; i < m; i++){
+      g.fillStyle = `rgba(255,255,255,${0.1 + Math.random()*0.35})`;
+      g.beginPath(); g.arc(Math.random()*s, Math.random()*s, Math.random()*1.6, 0, 7); g.fill();
+    }
+  }
+
   const secure = window.isSecureContext || location.hostname === 'localhost' || location.hostname === '127.0.0.1';
 
   async function startCamera(){
@@ -249,6 +379,8 @@
       startBtn.style.display = 'none';
       snapBtn.style.display = '';
       flipBtn.style.display = '';
+      filtersRow.style.display = 'flex';
+      applyLiveFilter();
       result.classList.remove('on');
     } catch (e){
       msgtxt.textContent = e.name === 'NotAllowedError'
@@ -262,9 +394,12 @@
     const s = Math.min(cam.videoWidth, cam.videoHeight);
     const c = document.createElement('canvas'); c.width = s; c.height = s;
     const g = c.getContext('2d');
+    g.filter = currentFilter.css || 'none';                        // bake the colour filter in
     if (facing === 'user'){ g.translate(s, 0); g.scale(-1, 1); }   // un-mirror to match preview
     const sx = (cam.videoWidth - s) / 2, sy = (cam.videoHeight - s) / 2;
     g.drawImage(cam, sx, sy, s, s, 0, 0, s, s);
+    g.setTransform(1, 0, 0, 1, 0, 0); g.filter = 'none';           // reset before overlays
+    paintFilterOverlay(g, s);                                      // warmth + vignette
     return c;
   }
 

@@ -541,14 +541,27 @@
 
   // the exact maze traced from book-pages/new_maze.png (17×18 grid)
   // wall bits: 1 top, 2 right, 4 bottom, 8 left
-  const MWALLS = [[0,0,0,0,0,5,5,3,13,5,3,9,5,1,3,13,5],[0,0,0,0,2,9,3,8,5,1,6,14,9,6,8,5,5],[0,0,0,0,2,10,10,10,11,10,9,5,4,7,8,5,7],[0,4,0,0,2,10,10,10,10,10,10,13,5,1,2,9,1],[8,3,8,4,6,10,10,10,10,10,12,1,7,10,10,12,4],[14,10,8,5,5,2,12,4,4,0,3,10,9,6,12,7,11],[9,2,10,9,1,2,13,5,5,4,4,2,10,11,13,1,2],[12,4,4,4,2,10,9,5,7,11,9,2,10,8,7,10,8],[9,5,5,3,10,10,12,1,5,2,10,14,12,2,13,6,10],[14,9,3,10,10,10,11,12,7,10,12,5,3,8,1,5,6],[9,2,10,8,0,2,10,9,1,0,1,3,8,2,10,9,3],[10,10,8,4,4,4,2,8,6,8,0,2,10,8,6,10,10],[10,10,12,5,5,3,8,2,9,4,4,4,4,4,5,6,14],[14,10,9,5,3,12,6,10,8,5,5,7,13,1,1,1,1],[9,6,10,11,10,13,1,2,10,13,5,1,1,0,0,0,0],[12,5,6,10,12,5,2,10,12,5,7,10,10,8,0,0,0],[9,3,9,4,5,5,2,8,1,1,5,4,2,8,0,0,0],[14,12,6,13,5,5,6,12,6,12,5,7,14,8,0,0,0]];
+  const MWALLS = [[9,3,15,9,1,5,5,3,13,5,3,9,5,1,3,13,5,7],[8,2,9,0,2,9,3,8,5,1,6,12,1,6,8,5,5,3],[8,0,0,0,2,10,10,10,11,8,1,5,4,7,8,5,7,10],[10,12,0,0,2,10,10,10,10,8,2,13,5,1,2,9,5,6],[8,3,8,4,6,10,14,14,10,8,4,1,7,10,10,12,5,3],[14,10,8,5,5,2,13,5,4,0,3,10,9,6,12,7,9,2],[13,6,10,13,5,2,13,5,5,4,4,2,10,11,13,1,0,6],[13,5,4,5,3,10,9,5,7,9,1,2,10,8,7,10,8,3],[9,5,5,3,10,10,12,1,5,0,2,14,12,2,13,6,10,10],[14,9,3,10,10,10,11,12,7,8,4,5,3,12,1,5,6,14],[9,2,10,12,4,6,10,13,1,4,5,1,0,7,10,9,3,11],[10,10,8,5,5,5,2,9,6,9,7,8,6,9,6,10,10,10],[10,10,12,5,5,3,12,6,9,4,5,4,5,4,5,6,14,10],[14,10,9,5,3,12,7,11,8,5,5,7,13,5,5,5,3,10],[9,6,10,11,10,13,1,2,10,13,5,1,1,1,7,11,12,2],[12,5,6,10,12,5,2,10,12,5,7,10,10,10,15,8,7,10],[9,3,9,4,5,5,2,8,1,1,5,4,2,10,15,14,15,14],[14,12,6,13,5,5,6,12,6,12,5,7,14,12,5,5,7,15]];
   // photo plaza cells (groom top-left, bride bottom-right) — not walkable
-  const MBLOCK = [15,15,15,15,0,0,0,0,0,0,0,0,0,114688,114688,114688,114688,114688];
-  const MNX = 17, MNY = 18;
-  const MSTART = { x: 2, y: 4 };                      // just below the groom
-  const MGOALS = new Set(['14,12','15,12','16,12','13,13','13,14','13,15','13,16','13,17']);
+  const MBLOCK = [6,4,0,0,0,0,0,0,0,0,0,0,0,0,98304,114688,114688,212992];
+  const MNX = 18, MNY = 18;
+  const MSTART = { x: 2, y: 2 };                      // just below the groom
+  const MGOALS = new Set(['13,15','13,16','13,17','14,14']);
   // board geometry: maze grid inside book-pages/new_maze.png
-  const MIMG = { w: 477, h: 600, ox: 17, oy: 129, px: 24.588, py: 24.722 };
+  const MIMG = { w: 477, h: 600, ox: 17, oy: 129, px: 24.889, py: 24.722 };
+  // uniform grid-line pixel positions (25px cells) — the printed maze is a regular
+  // grid, so the ring sits dead-centre in each corridor instead of drifting off it
+  const MVX = [17,42,67,92,117,141,166,191,216,241,266,291,316,341,365,390,415,440,465];
+  const MHY = [129,154,178,203,228,253,277,302,327,352,376,401,426,450,475,500,525,549,574];
+  const lineAt = (arr, c) => {                        // pixel position of fractional cell edge/centre
+    const i = Math.max(0, Math.min(arr.length - 2, Math.floor(c)));
+    return arr[i] + (arr[i + 1] - arr[i]) * (c - i);
+  };
+  const cellAt = (arr, v) => {                         // inverse: pixel -> fractional cell index
+    for (let i = 0; i < arr.length - 1; i++)
+      if (v < arr[i + 1] || i === arr.length - 2) return i + (v - arr[i]) / (arr[i + 1] - arr[i]);
+    return 0;
+  };
   const boardImg = new Image();
   boardImg.src = 'book-pages/new_maze.png';
   boardImg.onload = () => { if (mazeOpen) drawMaze(); };
@@ -567,27 +580,40 @@
     mcv.width = Math.round(cssw * dp); mcv.height = Math.round(cssh * dp);
     mctx.setTransform(dp, 0, 0, dp, 0, 0);
     mctx.imageSmoothingQuality = 'high';
-    MZ = { cw: cssw, ch: cssh, px: MSTART.x, py: MSTART.y, won: false };
+    MZ = { cw: cssw, ch: cssh, px: MSTART.x, py: MSTART.y, won: false,
+           trail: [{ x: MSTART.x, y: MSTART.y }] };
     statusE.textContent = '';
     drawMaze();
   }
 
-  // cell centre in canvas coords
+  // cell centre in canvas coords, using the exact grid lines
   const mCell = (cx, cy) => ({
-    x: (MIMG.ox + (cx + .5) * MIMG.px) * MZ.cw / MIMG.w,
-    y: (MIMG.oy + (cy + .5) * MIMG.py) * MZ.ch / MIMG.h
+    x: lineAt(MVX, cx + .5) * MZ.cw / MIMG.w,
+    y: lineAt(MHY, cy + .5) * MZ.ch / MIMG.h
   });
 
   function drawMaze(){
     if (!MZ) return;
     mctx.clearRect(0, 0, MZ.cw, MZ.ch);
     if (boardImg.complete) mctx.drawImage(boardImg, 0, 0, MZ.cw, MZ.ch);
+    // breadcrumb trail showing the path the ring has travelled
+    if (MZ.trail && MZ.trail.length > 1){
+      mctx.beginPath();
+      MZ.trail.forEach((c, k) => {
+        const q = mCell(c.x, c.y);
+        k ? mctx.lineTo(q.x, q.y) : mctx.moveTo(q.x, q.y);
+      });
+      mctx.strokeStyle = 'rgba(198,140,74,.9)';       // champagne-gold path
+      mctx.lineWidth = Math.max(3, MZ.cw / MNX * .32);
+      mctx.lineJoin = mctx.lineCap = 'round';
+      mctx.stroke();
+    }
     // the ring travelling from groom to bride
     const fs = Math.floor(MZ.cw / MNX * 1.05);
     mctx.font = `${fs}px serif`;
     mctx.textAlign = 'center'; mctx.textBaseline = 'middle';
     if (MZ.won){
-      const b = mCell(14.5, 13.5);
+      const b = mCell(15.5, 15.5);
       mctx.font = `${fs*1.8}px serif`;
       mctx.fillText('\u{1F495}', b.x, b.y - fs*1.6);
     } else {
@@ -607,6 +633,9 @@
     if (nx < 0 || ny < 0 || nx >= MNX || ny >= MNY) return;
     if (mBlocked(nx, ny) || !mazeCan(MZ.px, MZ.py, mx, my)) return;
     MZ.px = nx; MZ.py = ny;
+    const t = MZ.trail;                                // extend the path, or retrace on backtrack
+    if (t.length >= 2 && t[t.length - 2].x === nx && t[t.length - 2].y === ny) t.pop();
+    else t.push({ x: nx, y: ny });
     if (MGOALS.has(nx + ',' + ny)){
       MZ.won = true;
       statusE.textContent = 'He made it to the wedding! \u{1F48D} 31 Aug 2026';
@@ -618,10 +647,10 @@
   let mdrag = false;
   function mazePoint(e){
     const r = mcv.getBoundingClientRect();
-    // pointer position in cell coordinates
+    // pointer position in cell coordinates, via the exact grid lines
     const ix = (e.clientX - r.left) * MIMG.w / MZ.cw;
     const iy = (e.clientY - r.top) * MIMG.h / MZ.ch;
-    return { x: (ix - MIMG.ox) / MIMG.px, y: (iy - MIMG.oy) / MIMG.py };
+    return { x: cellAt(MVX, ix), y: cellAt(MHY, iy) };
   }
   function mazeFollow(e){
     if (!MZ || MZ.won) return;
