@@ -18,6 +18,15 @@
      canvas compositing on phones with fractional devicePixelRatio */
   #flat{position:fixed;display:none;pointer-events:none;z-index:1;}
   #coil{position:fixed;inset:0;pointer-events:none;z-index:2;}
+  /* back-to-invitation button */
+  #back{position:fixed;top:12px;left:12px;z-index:5;display:inline-flex;align-items:center;gap:6px;
+    padding:8px 14px 8px 11px;border-radius:22px;text-decoration:none;
+    font-family:Georgia,'Times New Roman',serif;font-size:13px;letter-spacing:.03em;
+    color:#4a3f2e;background:rgba(251,246,234,.82);border:1px solid #d8c9a8;
+    box-shadow:0 4px 14px -6px rgba(80,60,30,.5);backdrop-filter:blur(4px);
+    -webkit-backdrop-filter:blur(4px);}
+  #back svg{width:15px;height:15px;}
+  #back:active{background:#f0e6d0;}
 
   /* ---- wedding maze popup ---- */
   /* flex + margin:auto on the card centers it when it fits and lets the modal
@@ -64,6 +73,11 @@
   <canvas id="c"></canvas>
   <img id="flat" alt="" draggable="false">
   <canvas id="coil"></canvas>
+
+  <a id="back" href="index.html" aria-label="Back to invitation">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    Invitation
+  </a>
 
   <div id="mazeModal">
     <div class="mazeCard">
