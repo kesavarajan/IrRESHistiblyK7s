@@ -76,13 +76,25 @@
   .result canvas{max-width:260px;width:100%;border-radius:8px;box-shadow:0 16px 40px -18px rgba(90,60,20,.6);}
   .hint{font-size:12px;color:var(--soft);margin-top:6px;}
 
-  /* ---------- GALLERY ---------- */
-  .grid{columns:3 160px;column-gap:12px;}
-  .grid figure{break-inside:avoid;margin:0 0 12px;border-radius:12px;overflow:hidden;
-    box-shadow:0 14px 30px -18px rgba(90,60,20,.5);cursor:zoom-in;background:var(--cream);}
-  .grid img{display:block;width:100%;height:auto;transition:transform .5s ease;}
-  .grid figure:hover img{transform:scale(1.05);}
-  .empty{grid-column:1/-1;text-align:center;color:var(--soft);font-size:14px;
+  /* ---------- GALLERY / WALL CAROUSEL ---------- */
+  .carousel{position:relative;}
+  .grid{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
+    padding:6px 4px 16px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
+  .grid::-webkit-scrollbar{height:7px;}
+  .grid::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
+  .grid figure{flex:0 0 auto;scroll-snap-align:center;margin:0;border-radius:14px;overflow:hidden;
+    box-shadow:0 16px 34px -18px rgba(90,60,20,.55);cursor:zoom-in;background:var(--cream);}
+  .grid img{display:block;height:clamp(230px,46vh,430px);width:auto;transition:transform .5s ease;}
+  .grid figure:hover img{transform:scale(1.04);}
+  /* prev/next arrows (desktop; phones just swipe) */
+  .cbtn{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:44px;
+    border-radius:50%;border:1px solid var(--line);background:rgba(255,253,248,.92);color:var(--ink);
+    cursor:pointer;display:grid;place-items:center;box-shadow:0 6px 18px -8px rgba(90,60,20,.5);}
+  .cbtn svg{width:20px;height:20px;}
+  .cbtn.prev{left:-8px;} .cbtn.next{right:-8px;}
+  .cbtn[hidden]{display:none;}
+  @media (hover:none){ .cbtn{display:none;} }
+  .empty{width:100%;text-align:center;color:var(--soft);font-size:14px;
     border:1px dashed var(--line);border-radius:14px;padding:34px 18px;background:var(--paper);}
   .empty code{background:var(--cream);padding:2px 7px;border-radius:6px;color:var(--ember);font-family:monospace;}
 
@@ -140,18 +152,34 @@
       <div class="result" id="result">
         <canvas id="strip"></canvas>
         <div class="controls">
-          <button class="btn primary" id="download">
+          <button class="btn ghost" id="download">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M7 10l5 5 5-5M12 15V3"/></svg>
-            Download Strip
+            Download for me
+          </button>
+          <button class="btn primary" id="share" style="display:none">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 12.3a5 5 0 0 0-7-7l-.8.8-.8-.8a5 5 0 0 0-7 7l7.8 7.8z"/></svg>
+            Share with Reshu &amp; Kesav
           </button>
           <button class="btn ghost" id="again">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 4v6h-6"/><path d="M20.5 15a9 9 0 1 1-2.1-9.4L23 10"/></svg>
             Retake
           </button>
         </div>
-        <div class="hint">Tip: on a phone, long-press the strip to save it too.</div>
+        <div class="hint" id="shareStatus">Tip: on a phone, long-press the strip to save it too.</div>
       </div>
     </div>
+  </section>
+
+  <!-- ===================== PHOTOBOOTH WALL ===================== -->
+  <section id="wall-sec" style="display:none">
+    <div class="eyebrow">Live</div>
+    <h2>The <em>Photobooth Wall</em></h2>
+    <p class="sub">Photos our guests chose to share &mdash; showing the latest 10.
+      <br><span id="wallCount" style="display:inline-block;margin-top:8px;font-family:var(--carve);color:var(--gold);font-size:15px;"></span>
+      <br><button class="btn ghost" id="wallRefresh" style="margin-top:12px;padding:8px 18px;font-size:13px;">↻ Refresh</button>
+    </p>
+    <div class="grid" id="wall"></div>
+    <div class="empty" id="wallEmpty" style="display:none">No shared photos yet — be the first! 💛</div>
   </section>
 
   <!-- ===================== GALLERY ===================== -->
@@ -170,6 +198,25 @@
   <div id="lb"><img id="lbimg" alt=""></div>
 
 <script>
+  /* =====================================================================
+     UPLOAD CONFIG — collect guests' photobooth strips in one place.
+     Uses Cloudinary (free). To turn it on:
+       1) Make a free account at cloudinary.com
+       2) Settings → Upload → add an UNSIGNED upload preset; note its name
+       3) Copy your "Cloud name" (Dashboard) and the preset name below
+       4) (optional) keep the tag so all strips group together
+     Leave cloudName blank to keep the page in download-only mode.
+     ===================================================================== */
+  const UPLOAD = {
+    cloudName: 'vzh2pgpg',
+    uploadPreset: 'ReshuKesuWedding',    // unsigned Cloudinary preset
+    tag: 'wedding-photobooth',
+    showWall: true,                      // also show uploaded strips in the gallery
+    maxWidth: 900,                       // downscale before upload (saves storage)
+    quality: 0.82                        // JPEG quality for uploads
+  };
+  const uploadReady = !!(UPLOAD.cloudName && UPLOAD.uploadPreset);
+
   /* ======================= PHOTOBOOTH ======================= */
   const cam = document.getElementById('cam');
   const msg = document.getElementById('msg'), msgtxt = document.getElementById('msgtxt');
@@ -242,6 +289,11 @@
     dots.style.display = 'none';
     await buildStrip(shots);
     result.classList.add('on');
+    shareBtn.style.display = uploadReady ? '' : 'none';   // show only when configured
+    shareBtn.disabled = false;
+    shareStatus.textContent = uploadReady
+      ? 'Keep it just for you, or share it to Reshu & Kesav’s photo wall?'
+      : 'Tip: on a phone, long-press the strip to save it too.';
     snapBtn.disabled = false; flipBtn.disabled = false; busy = false;
     result.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }
@@ -295,11 +347,59 @@
     }, 'image/png');
   }
 
+  // build a smaller JPEG of the strip for uploading (keeps Cloudinary storage low)
+  function stripUploadBlob(){
+    return new Promise(res => {
+      const scale = Math.min(1, UPLOAD.maxWidth / strip.width);
+      const c = document.createElement('canvas');
+      c.width = Math.round(strip.width * scale);
+      c.height = Math.round(strip.height * scale);
+      const g = c.getContext('2d');
+      g.imageSmoothingQuality = 'high';
+      g.fillStyle = '#fbf5ea'; g.fillRect(0, 0, c.width, c.height);
+      g.drawImage(strip, 0, 0, c.width, c.height);
+      c.toBlob(b => res(b), 'image/jpeg', UPLOAD.quality);
+    });
+  }
+
+  // upload the strip to Cloudinary — only after the guest confirms
+  const shareBtn = document.getElementById('share');
+  const shareStatus = document.getElementById('shareStatus');
+  async function shareStrip(){
+    if (!uploadReady) return;
+    shareBtn.disabled = true;
+    shareStatus.textContent = 'Uploading… please wait.';
+    const blob = await stripUploadBlob();
+    const fd = new FormData();
+    fd.append('file', blob);
+    fd.append('upload_preset', UPLOAD.uploadPreset);
+    if (UPLOAD.tag) fd.append('tags', UPLOAD.tag);
+    try {
+      const r = await fetch(`https://api.cloudinary.com/v1_1/${UPLOAD.cloudName}/image/upload`, { method: 'POST', body: fd });
+      const res = await r.json();
+      if (!res.secure_url) throw new Error(res.error && res.error.message || 'upload failed');
+      shareStatus.textContent = 'Sent! 💛 Thank you — your photo is on their wall.';
+      shareBtn.textContent = 'Shared ✓';
+      sessionShared.push(res.secure_url);
+      wallSec.style.display = '';
+      addWallTile(res.secure_url, true);            // show it on the wall right away
+      setWallCount(wallTotal + 1);                  // optimistic count bump
+      wallSec.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    } catch (err) {
+      shareBtn.disabled = false;
+      shareStatus.textContent = 'Upload failed: ' + err.message + '. Please try again.';
+    }
+  }
+
   startBtn.addEventListener('click', startCamera);
   snapBtn.addEventListener('click', shoot);
   flipBtn.addEventListener('click', () => { facing = facing === 'user' ? 'environment' : 'user'; startCamera(); });
   document.getElementById('download').addEventListener('click', download);
-  document.getElementById('again').addEventListener('click', () => { result.classList.remove('on'); });
+  shareBtn.addEventListener('click', shareStrip);
+  document.getElementById('again').addEventListener('click', () => {
+    result.classList.remove('on');
+    shareBtn.textContent = 'Share with the couple';
+  });
 
   /* ======================= GALLERY ======================= */
   // Drop your photos into a /photos folder named 1.jpg, 2.jpg, ... (jpg or png).
@@ -317,16 +417,19 @@
     img.alt = 'Our moment';
     img.src = src;
     const fig = document.createElement('figure');
-    fig.style.order = order;
+    fig.dataset.order = order;
     fig.appendChild(img);
     fig.addEventListener('click', () => openLB(src));
-    grid.appendChild(fig);
+    // insert in ascending order among real tiles (ignore marquee clones)
+    let ref = null;
+    for (const c of grid.children){ if (c.dataset.clone) continue; if (+c.dataset.order > order){ ref = c; break; } }
+    grid.insertBefore(fig, ref);
   }
   function finish(){ tried++; if (tried >= totalTries && loaded === 0) showEmpty(); }
   function showEmpty(){
     grid.innerHTML = `<div class="empty">
       Add photos to the <code>photos/</code> folder as <code>1.jpg</code>, <code>2.jpg</code>&hellip;
-      &mdash; or list any file names in <code>photos/list.json</code>.
+      and they'll appear here automatically.
     </div>`;
   }
 
@@ -338,26 +441,156 @@
     img.onerror = () => { ei++; (ei < EXTS.length) ? (img.src = `photos/${n}.${EXTS[ei]}` + bust) : finish(); };
     img.src = `photos/${n}.${EXTS[0]}` + bust;
   }
-  // named files from a manifest: photos/list.json = ["engagement.jpg", "beach.png", ...]
-  function tryNamed(name, order){
-    const img = new Image();
-    img.onload = () => { addTile(img.src, order); finish(); };
-    img.onerror = finish;
-    img.src = 'photos/' + name + bust;
+  // load numbered photos: photos/1.jpg, 2.jpg, ...
+  for (let i = 1; i <= PHOTO_COUNT; i++) tryNumbered(i);
+
+  /* ============== PHOTOBOOTH WALL (shared uploads) ============== */
+  const WALL_MAX = 10;                              // only display the newest 10
+  const wallSec = document.getElementById('wall-sec');
+  const wall = document.getElementById('wall');
+  const wallEmpty = document.getElementById('wallEmpty');
+  const wallCountEl = document.getElementById('wallCount');
+  const sessionShared = [];                         // URLs shared during this visit
+  let wallTotal = 0;                                // total shared (all time)
+
+  function setWallCount(n){
+    wallTotal = n;
+    wallCountEl.textContent = n ? (n + (n === 1 ? ' photo shared' : ' photos shared')) : '';
+  }
+  function trimWall(){                                // count only real tiles, not marquee clones
+    const reals = [...wall.children].filter(c => !c.dataset.clone);
+    while (reals.length > WALL_MAX) wall.removeChild(reals.pop());
   }
 
-  // Prefer photos/list.json if present (any file names); otherwise fall back to numbered.
-  fetch('photos/list.json' + bust, { cache: 'no-store' })
-    .then(r => r.ok ? r.json() : null)
-    .then(list => {
-      if (Array.isArray(list) && list.length){
-        totalTries = list.length;
-        list.forEach((name, i) => tryNamed(name, i + 1));
-      } else {
-        for (let i = 1; i <= PHOTO_COUNT; i++) tryNumbered(i);
+  function addWallTile(url, prepend){
+    const img = new Image();
+    img.alt = 'Guest photo'; img.src = url;
+    const fig = document.createElement('figure');
+    fig.appendChild(img);
+    fig.addEventListener('click', () => openLB(url));
+    if (prepend && wall.firstChild) wall.insertBefore(fig, wall.firstChild);
+    else wall.appendChild(fig);
+    trimWall();
+    wallEmpty.style.display = 'none';
+  }
+
+  // load shared strips (needs Cloudinary "Resource list" enabled)
+  function loadWall(){
+    if (!uploadReady || !UPLOAD.showWall) return;
+    wallSec.style.display = '';                      // reveal the section
+    fetch(`https://res.cloudinary.com/${UPLOAD.cloudName}/image/list/${UPLOAD.tag}.json?t=` + Date.now(), { cache: 'no-store' })
+      .then(r => r.ok ? r.json() : Promise.reject(r.status))
+      .then(data => {
+        wall.innerHTML = '';
+        const all = (data && data.resources || []).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+        setWallCount(all.length);
+        all.slice(0, WALL_MAX).forEach(res =>
+          addWallTile(`https://res.cloudinary.com/${UPLOAD.cloudName}/image/upload/${res.public_id}.${res.format}`));
+        // keep this-session uploads visible even before they appear in the list
+        sessionShared.forEach(u => { if (!all.some(r => u.includes(r.public_id))) addWallTile(u, true); });
+        wallEmpty.style.display = wall.children.length ? 'none' : 'block';
+      })
+      .catch(() => {
+        // Resource list not enabled (401) — still show anything shared this session
+        setWallCount(sessionShared.length);
+        wallEmpty.textContent = sessionShared.length ? '' :
+          'Shared photos will appear here once they’re uploaded. 💛';
+        wallEmpty.style.display = wall.children.length ? 'none' : 'block';
+      });
+  }
+  document.getElementById('wallRefresh').addEventListener('click', loadWall);
+  loadWall();
+
+  // seamless looping carousel/marquee for each row of images
+  const ARROW = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d === 1 ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'}"/></svg>`;
+  const rebuilds = [];
+  document.querySelectorAll('.grid').forEach(g => {
+    const wrap = document.createElement('div');
+    wrap.className = 'carousel';
+    g.parentNode.insertBefore(wrap, g);
+    wrap.appendChild(g);
+    g.style.scrollSnapType = 'none';                  // free-flowing loop, no snapping
+    const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    const mk = (cls, dir) => {
+      const b = document.createElement('button');
+      b.className = 'cbtn ' + cls; b.type = 'button'; b.innerHTML = ARROW(dir);
+      b.addEventListener('click', () => g.scrollBy({ left: dir * g.clientWidth * 0.85, behavior: 'smooth' }));
+      wrap.appendChild(b);
+      return b;
+    };
+    const prev = mk('prev', -1), next = mk('next', 1);
+
+    let setW = 0, building = false, wrapping = false, rt = null;
+    const realTiles = () => [...g.children].filter(c => !c.dataset.clone);
+    const loopable = () => setW > g.clientWidth + 4;
+    const updateArrows = () => { prev.hidden = next.hidden = !loopable(); };
+
+    // duplicate the tiles so the row loops forever; setW = width of one full set
+    function rebuild(){
+      building = true;
+      g.querySelectorAll('[data-clone]').forEach(c => c.remove());
+      const reals = realTiles();
+      setW = 0;
+      if (reals.length){
+        const GAP = 14;                               // must match .grid gap
+        const oneSet = g.scrollWidth;                 // width of the reals (no trailing gap)
+        reals.forEach(r => {
+          const c = r.cloneNode(true); c.dataset.clone = '1';
+          const im = c.querySelector('img'); if (im) c.addEventListener('click', () => openLB(im.src));
+          g.appendChild(c);
+        });
+        setW = oneSet + GAP;                           // distance to the matching clone (robust)
+        if (setW && g.scrollLeft >= setW) g.scrollLeft = g.scrollLeft % setW;
+        // images may still be loading — re-measure once they have real dimensions
+        if (reals.some(r => { const im = r.querySelector('img'); return im && !im.complete; }))
+          setTimeout(rebuild, 400);
       }
-    })
-    .catch(() => { for (let i = 1; i <= PHOTO_COUNT; i++) tryNumbered(i); });
+      building = false;
+      updateArrows();
+    }
+    rebuilds.push(rebuild);
+
+    // wrap the scroll position seamlessly (content past setW is identical to the start)
+    const wrapScroll = () => {
+      if (!setW || wrapping) return;
+      if (g.scrollLeft >= setW){ wrapping = true; g.scrollLeft -= setW; wrapping = false; }
+    };
+    g.addEventListener('scroll', () => { wrapScroll(); updateArrows(); }, { passive: true });
+    addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(rebuild, 200); });
+    new MutationObserver(muts => {
+      if (building) return;
+      if (muts.some(m => [...m.addedNodes, ...m.removedNodes].some(n => n.nodeType === 1 && !n.dataset.clone))){
+        clearTimeout(rt); rt = setTimeout(rebuild, 200);
+      }
+    }).observe(g, { childList: true });
+
+    // gentle auto-marquee — pauses while hovered/touched
+    if (!reduce){
+      const SPEED = 0.5;                              // px per frame (~30px/sec — gentle but visible)
+      let paused = false, resumeT = null;
+      const tick = () => {
+        if (!paused && !document.hidden && loopable()){
+          g.scrollLeft += SPEED;
+          if (g.scrollLeft >= setW){ wrapping = true; g.scrollLeft -= setW; wrapping = false; }
+        }
+        requestAnimationFrame(tick);
+      };
+      const pause = () => { paused = true; clearTimeout(resumeT); };
+      const resume = () => { clearTimeout(resumeT); resumeT = setTimeout(() => paused = false, 1500); };
+      g.addEventListener('mouseenter', pause);
+      g.addEventListener('mouseleave', resume);
+      ['touchstart', 'pointerdown', 'wheel'].forEach(ev => g.addEventListener(ev, pause, { passive: true }));
+      ['touchend', 'touchcancel', 'pointerup'].forEach(ev => g.addEventListener(ev, resume, { passive: true }));
+      requestAnimationFrame(tick);
+    }
+
+    setTimeout(rebuild, 500);                          // initial build once images have size
+  });
+  // re-measure after everything (fonts/images) has loaded so the loop starts reliably
+  const rebuildAll = () => rebuilds.forEach(fn => fn());
+  addEventListener('load', rebuildAll);
+  [800, 1600, 3000].forEach(t => setTimeout(rebuildAll, t));
 
   // lightbox
   const lb = document.getElementById('lb'), lbimg = document.getElementById('lbimg');
