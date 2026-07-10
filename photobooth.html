@@ -76,16 +76,17 @@
   .result canvas{max-width:260px;width:100%;border-radius:8px;box-shadow:0 16px 40px -18px rgba(90,60,20,.6);}
   .hint{font-size:12px;color:var(--soft);margin-top:6px;}
 
-  /* ---------- GALLERY / WALL CAROUSEL ---------- */
-  .carousel{position:relative;}
-  .grid{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;scroll-behavior:smooth;
-    padding:6px 4px 16px;scrollbar-width:thin;scrollbar-color:var(--line) transparent;}
-  .grid::-webkit-scrollbar{height:7px;}
-  .grid::-webkit-scrollbar-thumb{background:var(--line);border-radius:4px;}
-  .grid figure{flex:0 0 auto;scroll-snap-align:center;margin:0;border-radius:14px;overflow:hidden;
-    box-shadow:0 16px 34px -18px rgba(90,60,20,.55);cursor:zoom-in;background:var(--cream);}
-  .grid img{display:block;height:clamp(230px,46vh,430px);width:auto;transition:transform .5s ease;}
-  .grid figure:hover img{transform:scale(1.04);}
+  /* ---------- GALLERY / WALL CAROUSEL (transform marquee) ---------- */
+  .carousel{position:relative;overflow:hidden;}
+  .grid{display:flex;gap:14px;width:max-content;padding:6px 4px 16px;
+    will-change:transform;touch-action:pan-y;}
+  .grid figure{flex:0 0 auto;margin:0;border-radius:14px;overflow:hidden;
+    box-shadow:0 16px 34px -18px rgba(90,60,20,.55);cursor:grab;background:var(--cream);}
+  .grid img{display:block;height:clamp(230px,46vh,430px);width:auto;
+    -webkit-user-drag:none;user-select:none;pointer-events:none;}
+  /* deter casual saving (not real protection — screenshots/DevTools still work) */
+  img{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;-webkit-user-drag:none;}
+  #lb img{pointer-events:none;}
   /* prev/next arrows (desktop; phones just swipe) */
   .cbtn{position:absolute;top:50%;transform:translateY(-50%);z-index:5;width:44px;height:44px;
     border-radius:50%;border:1px solid var(--line);background:rgba(255,253,248,.92);color:var(--ink);
@@ -501,7 +502,7 @@
   document.getElementById('wallRefresh').addEventListener('click', loadWall);
   loadWall();
 
-  // seamless looping carousel/marquee for each row of images
+  // seamless looping marquee (CSS transform — works on iOS where JS scrollLeft doesn't)
   const ARROW = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${d === 1 ? 'M9 6l6 6-6 6' : 'M15 6l-6 6 6 6'}"/></svg>`;
   const rebuilds = [];
   document.querySelectorAll('.grid').forEach(g => {
@@ -509,22 +510,26 @@
     wrap.className = 'carousel';
     g.parentNode.insertBefore(wrap, g);
     wrap.appendChild(g);
-    g.style.scrollSnapType = 'none';                  // free-flowing loop, no snapping
     const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     const mk = (cls, dir) => {
       const b = document.createElement('button');
       b.className = 'cbtn ' + cls; b.type = 'button'; b.innerHTML = ARROW(dir);
-      b.addEventListener('click', () => g.scrollBy({ left: dir * g.clientWidth * 0.85, behavior: 'smooth' }));
+      b.addEventListener('click', () => { pause(); setOffset(offset + dir * wrap.clientWidth * 0.85); });
       wrap.appendChild(b);
       return b;
     };
     const prev = mk('prev', -1), next = mk('next', 1);
 
-    let setW = 0, building = false, wrapping = false, rt = null;
-    const realTiles = () => [...g.children].filter(c => !c.dataset.clone);
-    const loopable = () => setW > g.clientWidth + 4;
+    let setW = 0, offset = 0, building = false, rt = null;
+    const realTiles = () => [...g.children].filter(c => c.tagName === 'FIGURE' && !c.dataset.clone);
+    const loopable = () => setW > wrap.clientWidth + 4;
     const updateArrows = () => { prev.hidden = next.hidden = !loopable(); };
+    const apply = () => { g.style.transform = 'translate3d(' + (-offset) + 'px,0,0)'; };
+    const setOffset = v => {                          // keep within one set → seamless wrap
+      if (setW > 0){ v %= setW; if (v < 0) v += setW; }
+      offset = v; apply(); updateArrows();
+    };
 
     // duplicate the tiles so the row loops forever; setW = width of one full set
     function rebuild(){
@@ -540,23 +545,16 @@
           const im = c.querySelector('img'); if (im) c.addEventListener('click', () => openLB(im.src));
           g.appendChild(c);
         });
-        setW = oneSet + GAP;                           // distance to the matching clone (robust)
-        if (setW && g.scrollLeft >= setW) g.scrollLeft = g.scrollLeft % setW;
-        // images may still be loading — re-measure once they have real dimensions
+        setW = oneSet + GAP;                           // distance to the matching clone
+        if (offset >= setW) offset %= setW;
         if (reals.some(r => { const im = r.querySelector('img'); return im && !im.complete; }))
-          setTimeout(rebuild, 400);
+          setTimeout(rebuild, 400);                    // re-measure once images have real size
       }
       building = false;
-      updateArrows();
+      apply(); updateArrows();
     }
     rebuilds.push(rebuild);
 
-    // wrap the scroll position seamlessly (content past setW is identical to the start)
-    const wrapScroll = () => {
-      if (!setW || wrapping) return;
-      if (g.scrollLeft >= setW){ wrapping = true; g.scrollLeft -= setW; wrapping = false; }
-    };
-    g.addEventListener('scroll', () => { wrapScroll(); updateArrows(); }, { passive: true });
     addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(rebuild, 200); });
     new MutationObserver(muts => {
       if (building) return;
@@ -565,23 +563,38 @@
       }
     }).observe(g, { childList: true });
 
-    // gentle auto-marquee — pauses while hovered/touched
+    // pause control
+    let paused = false, resumeT = null;
+    const pause = () => { paused = true; clearTimeout(resumeT); };
+    const resume = () => { clearTimeout(resumeT); resumeT = setTimeout(() => paused = false, 1400); };
+    g.addEventListener('mouseenter', pause);
+    g.addEventListener('mouseleave', resume);
+
+    // finger / mouse drag (transform-based, so it works on iOS).
+    // NB: no pointer capture — that would swallow the click that opens the lightbox.
+    let dragging = false, sx = 0, so = 0, moved = false, capId = null;
+    g.addEventListener('pointerdown', e => {
+      dragging = true; moved = false; sx = e.clientX; so = offset; capId = e.pointerId;
+      pause();
+    });
+    g.addEventListener('pointermove', e => {
+      if (!dragging) return;
+      const dx = e.clientX - sx;
+      if (!moved && Math.abs(dx) > 6){ moved = true; try { g.setPointerCapture(capId); } catch(_){} }  // capture only once it's a real drag
+      if (moved) setOffset(so - dx);
+    });
+    const endDrag = () => { if (dragging){ dragging = false; resume(); } };
+    g.addEventListener('pointerup', endDrag);
+    g.addEventListener('pointercancel', endDrag);
+    g.addEventListener('click', e => { if (moved){ e.stopPropagation(); e.preventDefault(); } }, true);  // don't open lightbox after a drag
+
+    // gentle auto-marquee
     if (!reduce){
-      const SPEED = 0.5;                              // px per frame (~30px/sec — gentle but visible)
-      let paused = false, resumeT = null;
+      const SPEED = 0.6;                              // px per frame (~36px/sec)
       const tick = () => {
-        if (!paused && !document.hidden && loopable()){
-          g.scrollLeft += SPEED;
-          if (g.scrollLeft >= setW){ wrapping = true; g.scrollLeft -= setW; wrapping = false; }
-        }
+        if (!paused && !dragging && !document.hidden && loopable()) setOffset(offset + SPEED);
         requestAnimationFrame(tick);
       };
-      const pause = () => { paused = true; clearTimeout(resumeT); };
-      const resume = () => { clearTimeout(resumeT); resumeT = setTimeout(() => paused = false, 1500); };
-      g.addEventListener('mouseenter', pause);
-      g.addEventListener('mouseleave', resume);
-      ['touchstart', 'pointerdown', 'wheel'].forEach(ev => g.addEventListener(ev, pause, { passive: true }));
-      ['touchend', 'touchcancel', 'pointerup'].forEach(ev => g.addEventListener(ev, resume, { passive: true }));
       requestAnimationFrame(tick);
     }
 
@@ -591,6 +604,10 @@
   const rebuildAll = () => rebuilds.forEach(fn => fn());
   addEventListener('load', rebuildAll);
   [800, 1600, 3000].forEach(t => setTimeout(rebuildAll, t));
+
+  // deter casual image saving (right-click menu + drag). Not real protection.
+  document.addEventListener('contextmenu', e => { if (e.target.tagName === 'IMG') e.preventDefault(); });
+  document.addEventListener('dragstart', e => { if (e.target.tagName === 'IMG') e.preventDefault(); });
 
   // lightbox
   const lb = document.getElementById('lb'), lbimg = document.getElementById('lbimg');

@@ -1,0 +1,8 @@
+<!doctype html><title>PENDING</title>
+<iframe id=f src="/photobooth.html" style="width:1200px;height:1600px;border:0"></iframe>
+<script>
+let t0='';
+function q(){return f.contentDocument.querySelector('#grid');}
+setTimeout(()=>{try{t0=q().style.transform+' k='+q().children.length;}catch(e){}},4000);
+setTimeout(()=>{try{const g=q();document.title='EARLY['+t0+'] LATE['+g.style.transform+' k='+g.children.length+']';}catch(e){document.title='ERR '+e.message;}},9000);
+</script>
