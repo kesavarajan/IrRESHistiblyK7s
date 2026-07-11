@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reshma &amp; Kesavarajan — Couple Quiz</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..600;1,9..144,400..500&family=Great+Vibes&family=Marcellus&family=Jost:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --cream:#fbf5ea; --paper:#fffdf8; --ink:#4a3f2e; --soft:#6a5a44;
+    --gold:#b5854a; --ember:#c15b3c; --rose:#e08a6a; --line:#e5dac4;
+    --good:#3e8e5a; --bad:#c0432b;
+    --display:'Fraunces',serif; --carve:'Marcellus',serif; --util:'Jost',sans-serif; --script:'Great Vibes',cursive;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{font-family:var(--util);color:var(--ink);min-height:100vh;-webkit-font-smoothing:antialiased;
+    overflow-x:hidden;background:radial-gradient(130% 90% at 50% 0%, #fffdf8 0%, #f4ead6 60%, #ecdfc6 100%);}
+
+  /* top bar */
+  .bar{position:sticky;top:0;z-index:20;display:flex;align-items:center;justify-content:space-between;
+    padding:12px 16px;background:rgba(251,245,234,.82);backdrop-filter:blur(8px);border-bottom:1px solid var(--line);}
+  .back{display:inline-flex;align-items:center;gap:6px;text-decoration:none;color:var(--ink);
+    font-family:var(--carve);font-size:14px;padding:7px 13px 7px 10px;border:1px solid var(--line);
+    border-radius:22px;background:var(--paper);}
+  .back svg{width:15px;height:15px;}
+  .bar .brand{font-family:var(--script);font-size:24px;color:var(--gold);line-height:1;}
+
+  .wrap{max-width:640px;margin:0 auto;padding:40px 18px 60px;}
+  .eyebrow{font-family:var(--util);font-weight:500;letter-spacing:.42em;text-transform:uppercase;
+    font-size:11px;color:var(--gold);text-align:center;}
+  h1{font-family:var(--display);font-weight:400;font-size:clamp(28px,7vw,46px);text-align:center;
+    margin:8px 0 6px;color:var(--ink);}
+  h1 em{font-style:italic;color:var(--ember);}
+  .sub{text-align:center;color:var(--soft);font-size:15px;max-width:520px;margin:0 auto;line-height:1.6;}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-radius:20px;
+    box-shadow:0 30px 60px -34px rgba(90,60,20,.5);padding:26px 22px;margin-top:26px;}
+
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;border:none;
+    font-family:var(--util);font-size:15px;letter-spacing:.04em;padding:13px 26px;border-radius:26px;
+    transition:.2s;text-decoration:none;color:#fff;background:linear-gradient(135deg,var(--ember),var(--rose));
+    box-shadow:0 10px 24px -10px rgba(193,91,60,.7);}
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{background:var(--cream);color:var(--ink);border:1px solid var(--line);box-shadow:none;}
+  .btn.block{width:100%;}
+
+  /* ---- start screen ---- */
+  #start{text-align:center;}
+  #start .meta{margin:18px 0 24px;font-family:var(--carve);letter-spacing:.14em;text-transform:uppercase;
+    font-size:12px;color:var(--gold);}
+  .rings{font-size:40px;margin-bottom:4px;}
+
+  /* ---- quiz screen ---- */
+  #quiz{display:none;}
+  .qtop{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;
+    font-family:var(--carve);font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--soft);}
+  .qtop .score{color:var(--gold);}
+  .bar-track{height:6px;border-radius:6px;background:var(--cream);overflow:hidden;margin-bottom:22px;border:1px solid var(--line);}
+  .bar-fill{height:100%;width:0;border-radius:6px;background:linear-gradient(90deg,var(--gold),var(--ember));
+    transition:width .5s cubic-bezier(.2,.7,.2,1);}
+  .qtext{font-family:var(--display);font-size:clamp(19px,4.8vw,25px);line-height:1.35;
+    color:var(--ink);margin-bottom:20px;min-height:2.4em;}
+  .opts{display:flex;flex-direction:column;gap:12px;}
+  .opt{display:flex;align-items:center;gap:12px;width:100%;text-align:left;cursor:pointer;
+    font-family:var(--util);font-size:15.5px;color:var(--ink);background:var(--cream);
+    border:1.5px solid var(--line);border-radius:14px;padding:15px 16px;transition:.18s;}
+  .opt .key{flex:0 0 auto;width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+    font-size:13px;font-family:var(--carve);color:var(--soft);background:var(--paper);border:1px solid var(--line);}
+  .opt:not([disabled]):hover{border-color:var(--gold);transform:translateY(-1px);}
+  .opt[disabled]{cursor:default;}
+  .opt.correct{border-color:var(--good);background:rgba(62,142,90,.1);}
+  .opt.correct .key{background:var(--good);color:#fff;border-color:var(--good);}
+  .opt.wrong{border-color:var(--bad);background:rgba(192,67,43,.09);}
+  .opt.wrong .key{background:var(--bad);color:#fff;border-color:var(--bad);}
+  .opt .mark{margin-left:auto;font-size:18px;opacity:0;transition:opacity .2s;}
+  .opt.correct .mark,.opt.wrong .mark{opacity:1;}
+  .qfoot{margin-top:22px;display:flex;justify-content:flex-end;min-height:48px;align-items:center;}
+  #next{display:none;}
+
+  /* ---- result screen ---- */
+  #result{display:none;text-align:center;}
+  #result .emoji{font-size:56px;line-height:1;margin-bottom:6px;}
+  #result .rtitle{font-family:var(--display);font-style:italic;font-size:clamp(24px,6vw,34px);color:var(--ember);margin-bottom:10px;}
+  #result .rscore{font-family:var(--carve);letter-spacing:.06em;font-size:20px;color:var(--ink);margin-bottom:6px;}
+  #result .rscore b{color:var(--gold);font-size:26px;}
+  #result .rmsg{color:var(--soft);font-size:15px;line-height:1.7;max-width:460px;margin:0 auto 24px;}
+  #result .ractions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;}
+
+  footer{text-align:center;padding:24px 18px 44px;color:var(--soft);}
+  footer .fscript{font-family:var(--script);font-size:32px;color:var(--gold);}
+
+  /* confetti */
+  .confetti{position:fixed;top:-16px;width:9px;height:14px;border-radius:1px;z-index:40;pointer-events:none;
+    animation:fall linear forwards;}
+  @keyframes fall{to{transform:translateY(105vh) rotate(680deg);opacity:.9;}}
+
+  @media (prefers-reduced-motion:reduce){
+    *{animation-duration:.01ms!important;}
+    .bar-fill{transition:none;}
+  }
+</style>
+</head>
+<body>
+  <div class="bar">
+    <a class="back" href="index.html" aria-label="Back to invitation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+      Invitation
+    </a>
+    <span class="brand">Reshu &amp; Kesav</span>
+  </div>
+
+  <div class="wrap">
+    <!-- ===== START ===== -->
+    <section id="start">
+      <div class="eyebrow">A little game</div>
+      <div class="rings">💍</div>
+      <h1>How well do you know <em>Reshu &amp; Kesav</em>?</h1>
+      <p class="sub">Answer a few playful questions about the couple and see how close you really are. No pressure — it's all in good fun!</p>
+      <div class="meta" id="startMeta"></div>
+      <button class="btn" id="startBtn">Start the Quiz &nbsp;→</button>
+    </section>
+
+    <!-- ===== QUIZ ===== -->
+    <section id="quiz">
+      <div class="card">
+        <div class="qtop">
+          <span id="qcount">Question 1</span>
+          <span class="score" id="qscore">0 correct</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" id="qbar"></div></div>
+        <div class="qtext" id="qtext"></div>
+        <div class="opts" id="qopts"></div>
+        <div class="qfoot"><button class="btn" id="next">Next &nbsp;→</button></div>
+      </div>
+    </section>
+
+    <!-- ===== RESULT ===== -->
+    <section id="result">
+      <div class="card">
+        <div class="emoji" id="rEmoji">🎉</div>
+        <div class="rtitle" id="rTitle"></div>
+        <div class="rscore">You scored <b id="rScore">0</b> / <span id="rTotal">0</span></div>
+        <p class="rmsg" id="rMsg"></p>
+        <div class="ractions">
+          <button class="btn" id="replay">↻ Play again</button>
+          <a class="btn ghost" href="photobooth.html">📸 Photobooth</a>
+          <a class="btn ghost" href="printed-edition.html">📖 Printed Edition</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <footer>
+    <div class="fscript">Reshu &amp; Kesav</div>
+    <div style="font-size:12px;letter-spacing:.3em;text-transform:uppercase;margin-top:6px;">31 August 2026</div>
+  </footer>
+
+<script>
+  /* =====================================================================
+     EDIT ME — the quiz questions.
+     Each: { q: "question text", options: ["A","B","C","D"], answer: index }
+     'answer' is the 0-based index of the correct option (0 = first).
+     Add or remove questions freely. 2–4 options each works best.
+     ===================================================================== */
+  const QUIZ = [
+    { q: "Where did Reshu & Kesav first meet?",
+      options: ["At college", "Through family", "At work", "On a trip"], answer: 0 },
+    { q: "Who said “I love you” first?",
+      options: ["Reshu", "Kesav", "They said it together", "A friend blurted it out"], answer: 1 },
+    { q: "What's their go-to date-night food?",
+      options: ["Biryani", "Pizza", "Dosa", "Ice cream"], answer: 0 },
+    { q: "Where did Kesav propose?",
+      options: ["On a beach", "At a rooftop dinner", "During a road trip", "At home"], answer: 2 },
+    { q: "What is the wedding date?",
+      options: ["30 August 2026", "31 August 2026", "1 September 2026", "6 September 2026"], answer: 1 },
+    { q: "Which city is the muhurtham in?",
+      options: ["Aruppukottai", "Madurai", "Chennai", "Coimbatore"], answer: 2 },
+    { q: "Who is the bigger foodie?",
+      options: ["Reshu", "Kesav", "Both, equally!", "Neither"], answer: 0 },
+    { q: "Their favourite thing to do together?",
+      options: ["Travelling", "Movie nights", "Long drives", "Cooking"], answer: 0 }
+  ];
+
+  /* result tiers by percentage (high → low) */
+  const TIERS = [
+    { min: 100, emoji: "💍", title: "Soulmate certified!", msg: "Flawless. You know Reshu & Kesav better than they know themselves. Save them a seat at the head table!" },
+    { min: 75,  emoji: "✨", title: "Inner-circle VIP",     msg: "Impressive! You're clearly one of their favourite people. See you on the dance floor." },
+    { min: 50,  emoji: "💛", title: "You know them well",   msg: "Lovely score! You've shared some good memories together — many more to come." },
+    { min: 25,  emoji: "🌱", title: "Getting there…",       msg: "A sweet start! Come to the wedding and get to know the happy couple even better." },
+    { min: 0,   emoji: "☕", title: "Time for more chai",   msg: "Plenty of stories left to hear — grab a coffee with them soon and find out!" }
+  ];
+
+  const $ = id => document.getElementById(id);
+  const startSec = $('start'), quizSec = $('quiz'), resultSec = $('result');
+  let idx = 0, score = 0, answered = false;
+
+  $('startMeta').textContent = QUIZ.length + ' questions · about a minute';
+
+  function show(sec){
+    startSec.style.display  = sec === 'start'  ? 'block' : 'none';
+    quizSec.style.display   = sec === 'quiz'   ? 'block' : 'none';
+    resultSec.style.display = sec === 'result' ? 'block' : 'none';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function begin(){ idx = 0; score = 0; show('quiz'); renderQ(); }
+
+  function renderQ(){
+    answered = false;
+    const item = QUIZ[idx];
+    $('qcount').textContent = 'Question ' + (idx + 1) + ' / ' + QUIZ.length;
+    $('qscore').textContent = score + (score === 1 ? ' correct' : ' correct');
+    $('qbar').style.width = (idx / QUIZ.length * 100) + '%';
+    $('qtext').textContent = item.q;
+    $('next').style.display = 'none';
+    const opts = $('qopts'); opts.innerHTML = '';
+    const keys = ['A', 'B', 'C', 'D', 'E'];
+    item.options.forEach((text, i) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.type = 'button';
+      b.innerHTML = `<span class="key">${keys[i]}</span><span class="txt"></span><span class="mark"></span>`;
+      b.querySelector('.txt').textContent = text;
+      b.addEventListener('click', () => choose(i, b));
+      opts.appendChild(b);
+    });
+  }
+
+  function choose(i, btn){
+    if (answered) return;
+    answered = true;
+    const item = QUIZ[idx];
+    const buttons = [...$('qopts').children];
+    buttons.forEach(b => b.setAttribute('disabled', ''));
+    const correctBtn = buttons[item.answer];
+    correctBtn.classList.add('correct');
+    correctBtn.querySelector('.mark').textContent = '✓';
+    if (i === item.answer){
+      score++;
+      $('qscore').textContent = score + ' correct';
+    } else {
+      btn.classList.add('wrong');
+      btn.querySelector('.mark').textContent = '✕';
+    }
+    $('qbar').style.width = ((idx + 1) / QUIZ.length * 100) + '%';
+    $('next').textContent = (idx + 1 < QUIZ.length) ? 'Next  →' : 'See my result  →';
+    $('next').style.display = 'inline-flex';
+  }
+
+  function nextQ(){
+    if (!answered) return;
+    idx++;
+    if (idx < QUIZ.length) renderQ();
+    else finish();
+  }
+
+  function finish(){
+    const total = QUIZ.length, pct = Math.round(score / total * 100);
+    const tier = TIERS.find(t => pct >= t.min) || TIERS[TIERS.length - 1];
+    $('rEmoji').textContent = tier.emoji;
+    $('rTitle').textContent = tier.title;
+    $('rScore').textContent = score;
+    $('rTotal').textContent = total;
+    $('rMsg').textContent = tier.msg;
+    show('result');
+    if (pct >= 50) confetti();
+  }
+
+  function confetti(){
+    const cols = ['#c15b3c', '#e08a6a', '#b5854a', '#3e8e5a', '#e0a86a', '#d9668a'];
+    for (let i = 0; i < 80; i++){
+      const c = document.createElement('div');
+      c.className = 'confetti';
+      c.style.left = Math.random() * 100 + 'vw';
+      c.style.background = cols[Math.random() * cols.length | 0];
+      c.style.animationDuration = (2.4 + Math.random() * 2) + 's';
+      c.style.animationDelay = (Math.random() * 0.5) + 's';
+      c.style.transform = 'rotate(' + (Math.random() * 360) + 'deg)';
+      document.body.appendChild(c);
+      setTimeout(() => c.remove(), 5000);
+    }
+  }
+
+  $('startBtn').addEventListener('click', begin);
+  $('next').addEventListener('click', nextQ);
+  $('replay').addEventListener('click', begin);
+  // keyboard: 1–4 to answer, Enter for next
+  addEventListener('keydown', e => {
+    if (quizSec.style.display === 'none') return;
+    if (!answered && /^[1-5]$/.test(e.key)){
+      const b = $('qopts').children[+e.key - 1]; if (b) b.click();
+    } else if (answered && (e.key === 'Enter' || e.key === ' ')){
+      e.preventDefault(); nextQ();
+    }
+  });
+</script>
+</body>
+</html>
