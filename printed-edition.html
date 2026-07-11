@@ -7,13 +7,14 @@
 <style>
   *{margin:0;padding:0;box-sizing:border-box;}
   html,body{height:100%;overflow:hidden;background:#f0e7d6;}
-  /* pan-x/pan-y + pinch-zoom: at scale 1 the page has nothing to pan so a
-     one-finger drag reaches our flip handler; once zoomed in, the browser
-     takes the drag to pan the magnified page instead */
-  body{touch-action:pan-x pan-y pinch-zoom;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
+  body{touch-action:pinch-zoom;overscroll-behavior:none;-webkit-user-select:none;user-select:none;}
   /* only the book layers are full-screen fixed — NOT the maze canvas */
   #c,#coil{display:block;position:fixed;inset:0;}
-  #c{z-index:0;}
+  /* pinch-zoom (not pan): a one-finger drag isn't stolen by the browser for
+     panning, so it reaches our flip handler — this is what makes turning pages
+     work on Android. When the reader zooms in, JS flips this to pan-x/pan-y so
+     the browser can pan the magnified page. Two-finger pinch always zooms. */
+  #c{z-index:0;touch-action:pinch-zoom;}
   /* native <img> shown when idle — browser image rendering is sharper than
      canvas compositing on phones with fractional devicePixelRatio */
   #flat{position:fixed;display:none;pointer-events:none;z-index:1;}
@@ -195,8 +196,8 @@
 
   // ---- pulsing hints over the playable areas (maze p2, word-search p4) ----
   const HINTS = [
-    { page: 1, x0: 0.5935, y0: 0.4667, x1: 0.9454, y1: 0.785 },   // maze card border
-    { page: 3, x0: 0.0908, y0: 0.1515, x1: 0.4844, y1: 0.457 }    // word-search grid
+    { page: 1, x0: 0.5935, y0: 0.4667, x1: 0.9454, y1: 0.785, c: '46,120,58' },   // maze card (green)
+    { page: 3, x0: 0.0908, y0: 0.1515, x1: 0.4844, y1: 0.457, c: '122,84,168' }   // word-search grid (purple)
   ];
   let hintDrawn = false;
   const rrp = (g, x, y, w, h, r) => { g.beginPath(); g.roundRect ? g.roundRect(x, y, w, h, r) : g.rect(x, y, w, h); };
@@ -206,13 +207,30 @@
     if (active){
       coilCx.clearRect(0, 0, W, H);
       drawBinding(coilCx);
-      const pulse = 0.5 + 0.5 * Math.sin(now / 480);
+      const pulse = 0.5 + 0.5 * Math.sin(now / 520);
       const x = pr.x + pr.w * h.x0, y = pr.y + pr.h * h.y0,
-            w = pr.w * (h.x1 - h.x0), ht = pr.h * (h.y1 - h.y0), grow = pulse * 1.5;
+            w = pr.w * (h.x1 - h.x0), ht = pr.h * (h.y1 - h.y0);
       coilCx.save();
-      coilCx.strokeStyle = `rgba(60,90,60,${0.30 + 0.55 * pulse})`;
-      coilCx.lineWidth = 1.2 + pulse * 1.3;
-      rrp(coilCx, x - grow, y - grow, w + grow * 2, ht + grow * 2, 6); coilCx.stroke();
+      coilCx.lineJoin = 'round';
+      // soft glowing tint filling the play area so it clearly reads as tappable
+      rrp(coilCx, x, y, w, ht, 8);
+      coilCx.fillStyle = `rgba(${h.c},${0.06 + 0.12 * pulse})`;
+      coilCx.fill();
+      // slim glowing border
+      const grow = 0.5 + pulse * 1.5;
+      coilCx.shadowColor = `rgba(${h.c},0.8)`;
+      coilCx.shadowBlur = 3 + pulse * 7;
+      coilCx.strokeStyle = `rgba(${h.c},${0.55 + 0.35 * pulse})`;
+      coilCx.lineWidth = 1.2 + pulse * 1;
+      rrp(coilCx, x - grow, y - grow, w + grow * 2, ht + grow * 2, 9); coilCx.stroke();
+      // expanding "ripple" ring that radiates outward and fades — draws the eye
+      const rip = (now / 1500) % 1;
+      coilCx.shadowBlur = 0;
+      coilCx.globalAlpha = (1 - rip) * 0.85;
+      coilCx.lineWidth = 2.5;
+      coilCx.strokeStyle = `rgba(${h.c},1)`;
+      const rg = 3 + rip * 26;
+      rrp(coilCx, x - rg, y - rg, w + rg * 2, ht + rg * 2, 12); coilCx.stroke();
       coilCx.restore();
       hintDrawn = true;
     } else if (hintDrawn){                          // clear the hint, keep the coils
@@ -512,6 +530,17 @@
     if (mazeOpen) newMaze();
     if (cwOpen) newCrossword();
   });
+
+  // while zoomed in, hand one-finger drags back to the browser so it can pan the
+  // magnified page; at scale 1 keep them for our flip gesture (Android-safe)
+  function syncTouchAction(){
+    cv.style.touchAction = zoomed() ? 'pan-x pan-y pinch-zoom' : 'pinch-zoom';
+  }
+  if (window.visualViewport){
+    window.visualViewport.addEventListener('resize', syncTouchAction);
+    window.visualViewport.addEventListener('scroll', syncTouchAction);
+  }
+  syncTouchAction();
   resize();
   requestAnimationFrame(hintLoop);
 
