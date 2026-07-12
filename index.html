@@ -463,6 +463,50 @@
 
 
   /* =========================================================
+     QUICK LINKS  (hero CTA · reception link · floating menu)
+     ========================================================= */
+  /* hero: jump straight to the printed edition */
+  .hero .hero-cta{
+    margin-top:28px; display:inline-flex; align-items:center; gap:9px;
+    font-family:var(--util); font-size:13px; letter-spacing:.06em; text-decoration:none;
+    color:var(--gold); border:1px solid rgba(231,184,88,.55); border-radius:26px; padding:11px 22px;
+    background:rgba(231,184,88,.06); opacity:0; animation:up 1.2s ease forwards 3.5s;
+    transition:background .25s ease, transform .25s ease;
+  }
+  .hero .hero-cta svg{ width:16px; height:16px; }
+  @media (hover:hover){ .hero .hero-cta:hover{ background:rgba(231,184,88,.15); transform:translateY(-2px); } }
+
+  /* reception: little link under the Photo Booth highlight */
+  .rc-item .rc-link{ display:inline-flex; align-items:center; gap:6px; margin-top:14px;
+    font-family:var(--util); font-size:12.5px; letter-spacing:.04em; color:var(--gold);
+    text-decoration:none; border-bottom:1px solid rgba(231,184,88,.5); padding-bottom:2px;
+    transition:color .25s ease, border-color .25s ease; }
+  .rc-item .rc-link:hover{ color:var(--peach); border-color:var(--peach); }
+
+  /* floating quick-links menu — reachable from anywhere */
+  .fab{ position:fixed; right:16px; bottom:16px; z-index:30;
+    display:flex; flex-direction:column; align-items:flex-end; gap:10px; }
+  .fab-links{ display:flex; flex-direction:column; align-items:flex-end; gap:10px;
+    opacity:0; transform:translateY(10px) scale(.96); pointer-events:none;
+    transition:opacity .3s ease, transform .3s cubic-bezier(.2,.7,.2,1); }
+  .fab.open .fab-links{ opacity:1; transform:none; pointer-events:auto; }
+  .fab-links a{ display:inline-flex; align-items:center; gap:9px; text-decoration:none;
+    font-family:var(--util); font-size:13px; letter-spacing:.02em; color:var(--night);
+    background:var(--cream); border:1px solid rgba(231,184,88,.55); border-radius:24px;
+    padding:11px 17px; box-shadow:0 12px 28px -10px rgba(0,0,0,.55); white-space:nowrap; }
+  .fab-links a svg{ width:16px; height:16px; color:var(--ember); }
+  .fab-toggle{ width:54px; height:54px; border-radius:50%; border:none; cursor:pointer;
+    background:linear-gradient(135deg,var(--ember),var(--rose)); color:#fff;
+    box-shadow:0 12px 30px -8px rgba(193,91,60,.7); display:grid; place-items:center;
+    transition:transform .3s ease; }
+  .fab-toggle svg{ width:24px; height:24px; transition:opacity .2s ease; }
+  .fab-toggle .ic-close{ display:none; }
+  .fab.open .fab-toggle{ transform:rotate(90deg); }
+  .fab.open .fab-toggle .ic-menu{ display:none; }
+  .fab.open .fab-toggle .ic-close{ display:block; }
+
+
+  /* =========================================================
      REDUCED MOTION
      ========================================================= */
   @media (prefers-reduced-motion:reduce){
@@ -496,6 +540,10 @@
       <span>Monday</span><span class="dot"></span><span><em>31 August 2026</em></span><span class="dot"></span><span>Chennai</span>
     </div>
     <div class="firstlight">at first light &mdash; 6:15 in the morning</div>
+    <a class="hero-cta" href="printed-edition.html">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 5v14M4 9h4M4 13h4"/></svg>
+      Open the Printed Edition
+    </a>
     <div class="cue"><div class="line"></div>Scroll</div>
   </section>
 
@@ -548,6 +596,7 @@
           </svg>
           <div class="nm">Photo Booth</div>
           <div class="ds">Strike a pose &amp; capture the memories</div>
+          <a class="rc-link" href="photobooth.html">Try our online booth &rarr;</a>
         </div>
 
         <div class="rc-item reveal">
@@ -714,13 +763,54 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
           Photobooth &amp; Moments
         </a>
+        <a class="btn primary" href="quiz.html">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a3 3 0 0 1 5.6 1.4c0 2-2.8 2.3-2.8 4"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>
+          The Couple Quiz
+        </a>
       </div>
     </div>
   </section>
 
 
+  <!-- ========================= FLOATING QUICK-LINKS MENU ========================= -->
+  <div class="fab" id="fab">
+    <div class="fab-links">
+      <a href="printed-edition.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 5v14M4 9h4M4 13h4"/></svg>
+        The Printed Edition
+      </a>
+      <a href="photobooth.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+        Photobooth &amp; Moments
+      </a>
+      <a href="quiz.html">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M9.2 9.3a3 3 0 0 1 5.6 1.4c0 2-2.8 2.3-2.8 4"/><circle cx="12" cy="17.2" r=".6" fill="currentColor"/></svg>
+        The Couple Quiz
+      </a>
+    </div>
+    <button class="fab-toggle" id="fabToggle" aria-label="Quick links" aria-expanded="false">
+      <svg class="ic-menu" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      <svg class="ic-close" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+    </button>
+  </div>
+
+
 <script>
 (function(){
+  // floating quick-links menu
+  const fab = document.getElementById('fab'), fabToggle = document.getElementById('fabToggle');
+  if (fab && fabToggle){
+    fabToggle.addEventListener('click', e => {
+      e.stopPropagation();
+      const open = fab.classList.toggle('open');
+      fabToggle.setAttribute('aria-expanded', open);
+    });
+    document.addEventListener('click', e => {
+      if (fab.classList.contains('open') && !fab.contains(e.target)){
+        fab.classList.remove('open'); fabToggle.setAttribute('aria-expanded', 'false');
+      }
+    });
+  }
   const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   // scroll reveals (all pages except hero)
