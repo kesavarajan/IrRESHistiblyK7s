@@ -121,14 +121,19 @@
     opacity:0; animation:up 1.2s ease forwards 3.25s;
   }
   .cue{
-    position:absolute; left:50%; bottom:26px; transform:translateX(-50%);
-    font-family:var(--util); font-size:10px; letter-spacing:.34em; text-transform:uppercase;
-    color:var(--cream); opacity:0; display:flex; flex-direction:column; align-items:center; gap:8px;
+    position:absolute; left:50%; bottom:24px; transform:translateX(-50%);
+    font-family:var(--util); font-size:11px; letter-spacing:.34em; text-transform:uppercase;
+    color:#fff; opacity:0;
+    display:flex; flex-direction:column; align-items:center; gap:9px;
     animation:cueIn 1s ease forwards 3.6s;
   }
-  .cue .line{ width:1px; height:34px; transform-origin:top;
-    background:linear-gradient(var(--gold),transparent); animation:cueBob 2.2s ease-in-out infinite; }
-  @keyframes cueIn{ to{ opacity:.7; } }
+  .cue .ctxt{ background:rgba(20,8,20,.5); padding:6px 14px; border-radius:20px;
+    border:1px solid rgba(255,255,255,.3); backdrop-filter:blur(3px);
+    box-shadow:0 4px 14px rgba(0,0,0,.3); }
+  .cue .line{ width:2px; height:30px; transform-origin:top; border-radius:2px;
+    background:linear-gradient(#fff,rgba(255,255,255,0)); box-shadow:0 0 6px rgba(0,0,0,.4);
+    animation:cueBob 2.2s ease-in-out infinite; }
+  @keyframes cueIn{ to{ opacity:1; } }
   @keyframes cueBob{ 0%,100%{ transform:scaleY(1); opacity:.9; } 50%{ transform:scaleY(.6); opacity:.4; } }
 
 
@@ -507,6 +512,184 @@
 
 
   /* =========================================================
+     WELCOME INTRO — Windows-style: lock → desktop → app → site
+     ========================================================= */
+  body.wlock-scroll{ overflow:hidden; height:100svh; }
+  #welcome{ position:fixed; inset:0; z-index:100; overflow:hidden; background:#0a0a12;
+    font-family:system-ui,'Segoe UI','Jost',sans-serif; color:#fff;
+    transition:opacity .8s ease; }
+  #welcome.gone{ opacity:0; pointer-events:none; }
+  #welcome .scene{ position:absolute; inset:0; opacity:0; visibility:hidden;
+    transition:opacity .6s ease, transform .8s cubic-bezier(.5,.05,.2,1); }
+  #welcome .scene.on{ opacity:1; visibility:visible; }
+  /* stacking: lock above desktop so its slide-up reveals the desktop; app on top */
+  #welcome .wlock{ z-index:3; } #welcome .wdesk{ z-index:2; } #welcome .wapp{ z-index:4; }
+
+  /* --- start gate: WeddingOS terminal boot (also unlocks audio) --- */
+  .wstart{ position:absolute; inset:0; z-index:6; display:flex; align-items:center; justify-content:center;
+    padding:18px; transition:opacity .6s ease; background:#05070a; }
+  .wstart.hide{ opacity:0; pointer-events:none; }
+  .wterm{ width:min(94vw,640px); background:#080c09; border:1px solid #1c2a1e; border-radius:11px;
+    overflow:hidden; box-shadow:0 34px 90px rgba(0,0,0,.65);
+    font-family:'Consolas','SF Mono',ui-monospace,'Courier New',monospace; }
+  .wterm-bar{ display:flex; align-items:center; gap:8px; padding:10px 13px; background:#111814;
+    border-bottom:1px solid #1c2a1e; }
+  .wterm-bar .dot{ width:11px; height:11px; border-radius:50%; }
+  .wterm-bar .r{ background:#ff5f56; } .wterm-bar .y{ background:#ffbd2e; } .wterm-bar .g{ background:#27c93f; }
+  .wterm-title{ margin-left:8px; font-size:12px; color:#6f8272; letter-spacing:.02em; }
+  .wterm-body{ padding:22px 22px 26px; min-height:min(58vh,360px);
+    color:#b9f5c0; font-size:clamp(13px,3.4vw,15px); line-height:1.95; text-shadow:0 0 6px rgba(94,240,138,.25); }
+  .wterm-out div{ white-space:pre-wrap; word-break:break-word; }
+  .wterm-out .hd{ color:#7cf6ff; font-weight:700; text-shadow:0 0 8px rgba(124,246,255,.35); }
+  .wterm-out .dim{ color:#8aa08a; }
+  .wterm-out .ok{ color:#5ef08a; }
+  .wterm-cursor{ display:inline-block; width:9px; height:1.05em; background:#5ef08a; vertical-align:-2px;
+    margin-left:1px; animation:tblink 1s steps(1) infinite; }
+  @keyframes tblink{ 50%{ opacity:0; } }
+  .wterm-start{ display:none; margin-top:16px; align-items:center; gap:18px; flex-wrap:wrap; }
+  .wterm-start.on{ display:flex; }
+  .wterm-start .prompt{ color:#eafff0; letter-spacing:.02em; }
+  .wterm-start .prompt b{ color:#7cf6ff; }
+  .wstartbtn{ font-family:inherit; font-size:15px; letter-spacing:.14em; cursor:pointer; color:#8dffb0;
+    background:#0f3d1e; border:1px solid #2f7d4a; border-radius:6px; padding:10px 24px;
+    animation:startpulse 1.6s ease-in-out infinite; }
+  @keyframes startpulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(92,240,138,.45); } 50%{ box-shadow:0 0 0 11px rgba(92,240,138,0); } }
+  .wstartbtn:hover{ background:#12522a; }
+
+  /* --- Windows 11 lock screen (Ref 1) --- */
+  .wlock{ background:
+      radial-gradient(120% 90% at 18% 30%, rgba(120,150,255,.5), transparent 55%),
+      radial-gradient(120% 120% at 88% 78%, rgba(30,60,200,.6), transparent 60%),
+      conic-gradient(from 210deg at 30% 40%, #2a3fd6, #1e2fb0 30%, #3a55e8 60%, #1b2a9e 100%),
+      linear-gradient(160deg,#22349e,#0f1b6e); }
+  .wlock::before{ content:""; position:absolute; inset:0; opacity:.5; pointer-events:none;
+    background:
+      radial-gradient(60% 40% at 10% 20%, rgba(255,255,255,.18), transparent 60%),
+      radial-gradient(50% 60% at 95% 60%, rgba(120,180,255,.25), transparent 60%); }
+  .wlock-mid{ position:absolute; left:50%; top:44%; transform:translate(-50%,-50%);
+    display:flex; flex-direction:column; align-items:center; text-align:center; width:min(90vw,360px); }
+  .wavatar{ width:130px; height:130px; border-radius:50%; overflow:hidden; margin-bottom:20px;
+    background:linear-gradient(160deg,#8fa8ff,#3652c9); box-shadow:0 10px 30px rgba(0,0,0,.35);
+    position:relative; }
+  .wavatar img{ width:100%; height:100%; object-fit:cover; }
+  .wname{ font-size:30px; font-weight:600; letter-spacing:.01em; margin-bottom:16px; }
+  .wwifi{ width:30px; height:30px; margin-bottom:12px; opacity:.95; }
+  .whello{ font-size:19px; font-weight:400; margin-bottom:6px; transition:opacity .35s ease; }
+  .wsignlabel{ font-size:13px; color:rgba(255,255,255,.8); margin:18px 0 12px; }
+  .wsignopts{ display:flex; gap:12px; }
+  .wsignopts button{ width:56px; height:52px; border-radius:8px; border:1px solid transparent;
+    background:rgba(255,255,255,.14); color:#fff; display:grid; place-items:center; cursor:default; }
+  .wsignopts button svg{ width:24px; height:24px; }
+  .wsignopts button.face{ border-color:rgba(255,255,255,.9); background:rgba(255,255,255,.2); }
+  .wface-scan{ position:absolute; inset:0; border-radius:50%; pointer-events:none; opacity:0;
+    background:linear-gradient(180deg, transparent 45%, rgba(120,220,255,.55) 50%, transparent 55%);
+    box-shadow:inset 0 0 0 3px rgba(120,220,255,.7); }
+  .wavatar.scan .wface-scan{ opacity:1; animation:wscan 1.3s ease-in-out 2; }
+  @keyframes wscan{ 0%{ background-position:0 -130px; } 100%{ background-position:0 130px; } }
+  .wlock-user{ position:absolute; left:20px; bottom:20px; display:flex; flex-direction:column; gap:10px; }
+  .wlock-user .u{ display:flex; align-items:center; gap:10px; font-size:14px; }
+  .wlock-user .u .av{ width:34px; height:34px; border-radius:50%; overflow:hidden;
+    background:linear-gradient(160deg,#8fa8ff,#3652c9); display:grid; place-items:center; }
+  .wlock-user .u.sel{ background:rgba(255,255,255,.14); border-radius:8px; padding:8px 14px 8px 8px; }
+  .wlock-user .u .av img{ width:100%; height:100%; object-fit:cover; }
+  .wlock-user .u .av svg{ width:18px; height:18px; }
+  .wlock-sys{ position:absolute; right:20px; bottom:22px; display:flex; gap:20px; opacity:.9; }
+  .wlock-sys svg{ width:19px; height:19px; }
+
+  /* --- desktop (Ref 2) --- */
+  .wdesk{ background:#0b0b10 center/cover no-repeat; }
+  .wdesk .wp{ position:absolute; inset:0; background:center/cover no-repeat;
+    background-image:linear-gradient(90deg, rgba(6,6,12,.8) 0%, rgba(6,6,12,.3) 34%, rgba(6,6,12,.12) 60%, rgba(6,6,12,.5) 100%), url('photos/5.jpeg?v=1'); }
+  .wicons{ position:absolute; left:8px; top:8px; display:grid; grid-template-columns:repeat(2,84px);
+    gap:2px 4px; z-index:2; }
+  .wic{ width:84px; padding:8px 4px 7px; border-radius:6px; text-align:center; cursor:default;
+    border:1px solid transparent; }
+  .wic .gl{ width:38px; height:38px; margin:0 auto 5px; border-radius:9px; display:grid; place-items:center;
+    font-size:22px; background:rgba(255,255,255,.08); }
+  .wic .lb{ font-size:11.5px; line-height:1.2; color:#fff; text-shadow:0 1px 3px rgba(0,0,0,.9); }
+  .wic.sel{ background:rgba(120,160,255,.28); border-color:rgba(150,190,255,.5); }
+  .wic.mwt .gl{ background:linear-gradient(145deg,#7b4bff,#b44bd0); font-size:0; position:relative; }
+  .wic.mwt .gl::after{ content:"💗"; font-size:20px; }
+  /* My WeddingTech — same size as other icons, sitting ~2 tiles above the bottom */
+  .wic.mwt.center{ position:absolute; left:50%; bottom:150px; transform:translateX(-50%); z-index:2; }
+  .wic.mwt.center .gl{ animation:mwtPulse 2s ease-in-out infinite; }
+  .wic.mwt.center.sel .gl{ animation:none; }
+  @keyframes mwtPulse{ 0%,100%{ box-shadow:0 0 0 0 rgba(180,120,255,.55); }
+    50%{ box-shadow:0 0 0 12px rgba(180,120,255,0); } }
+  .wtaskbar{ position:absolute; left:0; right:0; bottom:0; height:48px; z-index:3;
+    background:rgba(28,30,42,.86); backdrop-filter:blur(12px); border-top:1px solid rgba(255,255,255,.08);
+    display:flex; align-items:center; gap:8px; padding:0 12px; }
+  .wtaskbar .tstart{ width:30px; height:30px; display:grid; place-items:center; }
+  .wtaskbar .tsearch{ flex:0 1 220px; height:32px; border-radius:16px; background:rgba(255,255,255,.1);
+    display:flex; align-items:center; gap:8px; padding:0 12px; font-size:12.5px; color:rgba(255,255,255,.7); }
+  .wtaskbar .tsearch svg{ width:15px; height:15px; }
+  .wtaskbar .tapps{ display:flex; gap:10px; margin-left:6px; }
+  .wtaskbar .tapps span{ font-size:18px; }
+  .wtaskbar .ttray{ margin-left:auto; display:flex; align-items:center; gap:14px; font-size:12px; color:#fff; }
+  .wtaskbar .ttray .clk{ text-align:right; line-height:1.25; }
+  .wgrid-win{ display:grid; grid-template-columns:repeat(2,10px); grid-template-rows:repeat(2,10px);
+    gap:3px; } .wgrid-win i{ background:#4aa3ff; border-radius:1px; }
+
+  /* app-open zoom on desktop when launching */
+  .wdesk.launch{ transform:scale(1.4); opacity:0; }
+
+  /* --- My WeddingTech app (Ref 3) --- */
+  .wapp{ background:linear-gradient(180deg,#2a41e8 0%, #6a4bd0 42%, #c98fce 68%, #f6c6a8 84%, #fdf2ea 100%);
+    transform:scale(1.15); }
+  .wapp.on{ transform:scale(1); }
+  .wapp-bar{ position:absolute; top:0; left:0; right:0; height:58px; background:#fff;
+    display:flex; align-items:center; justify-content:space-between; padding:0 20px; z-index:2;
+    box-shadow:0 2px 12px rgba(0,0,0,.08); }
+  .wapp-bar .ham{ display:flex; flex-direction:column; gap:4px; }
+  .wapp-bar .ham i{ width:22px; height:2.5px; background:#333; border-radius:2px; }
+  .wapp-bar .dots{ font-size:24px; color:#333; letter-spacing:1px; }
+  .wlogo{ font-size:22px; font-weight:400; }
+  .wlogo .my{ font-family:'Great Vibes',cursive; font-size:26px;
+    background:linear-gradient(90deg,#e0559b,#b44bd0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .wlogo .wt{ font-weight:700; font-family:system-ui,'Jost',sans-serif; }
+  .wlogo .wt .w{ background:linear-gradient(90deg,#7b4bff,#b44bd0); -webkit-background-clip:text; background-clip:text; color:transparent; }
+  .wlogo .wt .t{ color:#e0559b; }
+  .wapp-body{ position:absolute; inset:58px 0 0; display:flex; flex-direction:column;
+    align-items:center; justify-content:flex-start; padding-top:34vh; }
+  .wapp-welcome{ font-size:clamp(32px,9vw,46px); font-weight:600; color:#fff; margin-bottom:30px;
+    text-shadow:0 2px 20px rgba(0,0,0,.15); }
+  .wapp-welcome .scriptname{ font-family:'Great Vibes',cursive; font-weight:400; font-size:1.15em; }
+  .wsearch{ width:min(86vw,560px); height:64px; background:#fff; border-radius:16px;
+    display:flex; align-items:center; padding:0 8px 0 18px; gap:12px;
+    box-shadow:0 14px 40px rgba(80,40,120,.28), 0 0 0 3px rgba(255,255,255,.25); }
+  .wsearch .mag{ width:26px; height:26px; color:#8a3bd0; flex:0 0 auto; }
+  .wsearch .div{ width:1px; height:28px; background:#ddd; }
+  .wsearch .field{ flex:1; position:relative; font-size:clamp(15px,4vw,18px); color:#333;
+    white-space:nowrap; overflow:hidden; }
+  .wsearch .ph{ color:#9a9a9a; }
+  .wsearch .caret{ display:inline-block; width:2px; height:1.1em; background:#8a3bd0;
+    vertical-align:-0.18em; margin-left:1px; opacity:0; }
+  .wsearch .caret.on{ animation:wblink 1s steps(1) infinite; }
+  @keyframes wblink{ 0%,50%{ opacity:1; } 51%,100%{ opacity:0; } }
+  .wsearch .go{ width:48px; height:48px; border-radius:12px; border:none; flex:0 0 auto; cursor:default;
+    background:linear-gradient(135deg,#7b4bff,#c15b9e); color:#fff; display:grid; place-items:center; }
+  .wsearch .go svg{ width:22px; height:22px; }
+  .wsearch.pressed .go{ transform:scale(.9); }
+
+  /* animated mouse cursor */
+  .wcursor{ position:absolute; left:50%; top:60%; z-index:7; pointer-events:none;
+    width:22px; height:22px; transition:left .9s cubic-bezier(.5,.05,.2,1), top .9s cubic-bezier(.5,.05,.2,1);
+    filter:drop-shadow(0 2px 3px rgba(0,0,0,.5)); opacity:0; }
+  .wcursor.show{ opacity:1; }
+  .wcursor svg{ width:100%; height:100%; }
+  .wcursor.click{ transform:scale(.82); }
+
+  /* hold the landing entrance until the welcome video ends, then play it */
+  .sunrise,.rays,.sun,
+  .hero .eyebrow,.hero .rule,.hero .weds,.hero .names .n,.hero .meta,.hero .firstlight,
+  .cue,.cue .line{ animation-play-state:paused; }
+  body.entered .sunrise,body.entered .rays,body.entered .sun,
+  body.entered .hero .eyebrow,body.entered .hero .rule,body.entered .hero .weds,
+  body.entered .hero .names .n,body.entered .hero .meta,body.entered .hero .firstlight,
+  body.entered .cue,body.entered .cue .line{ animation-play-state:running; }
+
+
+  /* =========================================================
      REDUCED MOTION
      ========================================================= */
   @media (prefers-reduced-motion:reduce){
@@ -520,6 +703,87 @@
 </style>
 </head>
 <body>
+
+  <!-- ===================== WELCOME INTRO (Windows-style) ===================== -->
+  <div id="welcome" role="dialog" aria-label="Welcome">
+    <!-- start gate: WeddingOS terminal boot (unlocks audio on START) -->
+    <div class="wstart" id="wstart">
+      <div class="wterm">
+        <div class="wterm-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="wterm-title">C:\WeddingOS\boot.exe</span>
+        </div>
+        <div class="wterm-body">
+          <div class="wterm-out" id="wtermOut"></div>
+          <div class="wterm-start" id="wtermStart">
+            <span class="prompt">Press <b>START</b> to Continue</span>
+            <button class="wstartbtn" id="wstartBtn" type="button">&#9654; START</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scene 1: lock screen -->
+    <div class="scene wlock" id="wlock">
+      <div class="wlock-mid">
+        <div class="wavatar" id="wavatar"><img src="photos/2.jpeg?v=1" alt="" onerror="this.style.display='none'"><div class="wface-scan"></div></div>
+        <div class="wname">Dear Viewer</div>
+        <svg class="wwifi" viewBox="0 0 24 24" fill="currentColor"><path d="M12 18.5a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM5.6 12.1l1.8 1.8a6.5 6.5 0 0 1 9.2 0l1.8-1.8a9 9 0 0 0-12.8 0zM1.4 7.9 3.2 9.7a15 15 0 0 1 17.6 0l1.8-1.8a17.5 17.5 0 0 0-21.2 0z"/></svg>
+        <div class="whello" id="whello">Hello, Dear Viewer!</div>
+        <div class="wsignlabel">Sign-in options</div>
+        <div class="wsignopts">
+          <button aria-label="Password"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/></svg></button>
+          <button aria-label="Fingerprint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M12 5a7 7 0 0 0-7 7v3"/><path d="M12 8a4 4 0 0 0-4 4v4"/><path d="M12 11a1 1 0 0 0-1 1v6"/><path d="M19 12a7 7 0 0 0-3-5.7"/><path d="M15 12v4M18.5 15v2"/></svg></button>
+          <button aria-label="PIN"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="7" cy="7" r="1.6"/><circle cx="12" cy="7" r="1.6"/><circle cx="17" cy="7" r="1.6"/><circle cx="7" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="17" cy="12" r="1.6"/><circle cx="7" cy="17" r="1.6"/><circle cx="12" cy="17" r="1.6"/><circle cx="17" cy="17" r="1.6"/></svg></button>
+          <button class="face" aria-label="Face"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="4" y="4" width="16" height="16" rx="4"/><circle cx="9.5" cy="10.5" r=".2"/><circle cx="14.5" cy="10.5" r=".2"/><path d="M9 14.5s1.2 1.5 3 1.5 3-1.5 3-1.5"/></svg></button>
+        </div>
+      </div>
+      <div class="wlock-user">
+        <div class="u sel"><span class="av"><img src="photos/2.jpeg?v=1" alt="" onerror="this.style.display='none'"></span> Dear Viewer</div>
+        <div class="u"><span class="av"><svg viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="8" r="4"/><path d="M4 20a8 8 0 0 1 16 0z"/></svg></span> Other user</div>
+      </div>
+      <div class="wlock-sys">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 18.5a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM5.6 12.1l1.8 1.8a6.5 6.5 0 0 1 9.2 0l1.8-1.8a9 9 0 0 0-12.8 0zM1.4 7.9 3.2 9.7a15 15 0 0 1 17.6 0l1.8-1.8a17.5 17.5 0 0 0-21.2 0z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="5" r="1.6"/><path d="M12 8v4M8 12h8M9 20l3-4 3 4"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3v9"/><path d="M6.6 6.6a8 8 0 1 0 10.8 0"/></svg>
+      </div>
+    </div>
+
+    <!-- Scene 2: desktop -->
+    <div class="scene wdesk" id="wdesk">
+      <div class="wp"></div>
+      <div class="wicons" id="wicons"></div>
+      <div class="wtaskbar">
+        <span class="tstart"><span class="wgrid-win"><i></i><i></i><i></i><i></i></span></span>
+        <span class="tsearch"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg> Type here to search</span>
+        <span class="tapps">🗂️ 🌐</span>
+        <span class="ttray"><span>⌃</span><span>📶</span><span>🔊</span><span class="clk"><div>11:30 AM</div><div></div></span></span>
+      </div>
+    </div>
+
+    <!-- Scene 3: My WeddingTech app -->
+    <div class="scene wapp" id="wapp">
+      <div class="wapp-bar">
+        <span class="ham"><i></i><i></i><i></i></span>
+        <span class="wlogo"><span class="my">My</span> <span class="wt"><span class="w">Wedding</span><span class="t">Tech</span></span></span>
+        <span class="dots">&#8943;</span>
+      </div>
+      <div class="wapp-body">
+        <div class="wapp-welcome">Welcome, <span class="scriptname">User!</span></div>
+        <div class="wsearch" id="wsearch">
+          <svg class="mag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+          <span class="div"></span>
+          <span class="field"><span class="ph" id="wph">Type the groom and bride name</span><span class="typed" id="wtyped"></span><span class="caret" id="wcaret"></span></span>
+          <button class="go" id="wgo" aria-label="Search"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- animated mouse cursor -->
+    <div class="wcursor" id="wcursor">
+      <svg viewBox="0 0 24 24"><path d="M4 2l7 18 2.5-7.5L21 10z" fill="#fff" stroke="#333" stroke-width="1" stroke-linejoin="round"/></svg>
+    </div>
+  </div>
 
   <!-- fixed dawn backdrop for page 1 -->
   <div class="sky"></div>
@@ -540,11 +804,7 @@
       <span>Monday</span><span class="dot"></span><span><em>31 August 2026</em></span><span class="dot"></span><span>Chennai</span>
     </div>
     <div class="firstlight">at first light &mdash; 6:15 in the morning</div>
-    <a class="hero-cta" href="printed-edition.html">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"/><path d="M8 5v14M4 9h4M4 13h4"/></svg>
-      Open the Printed Edition
-    </a>
-    <div class="cue"><div class="line"></div>Scroll</div>
+    <div class="cue"><span class="ctxt">Scroll</span><div class="line"></div></div>
   </section>
 
 
@@ -796,6 +1056,214 @@
 
 
 <script>
+(function welcomeIntro(){
+  const W = document.getElementById('welcome');
+  const enter = () => document.body.classList.add('entered');   // play the landing animations
+  if (!W){ enter(); return; }
+  // Play on a fresh load or refresh; skip only when returning from another page of the site.
+  const navEntry = performance.getEntriesByType && performance.getEntriesByType('navigation')[0];
+  const navType = navEntry ? navEntry.type
+    : (performance.navigation && performance.navigation.type === 1 ? 'reload' : 'navigate');
+  const ref = document.referrer || '';
+  const INTERNAL = ['printed-edition.html', 'photobooth.html', 'quiz.html'];
+  const fromInternal = INTERNAL.some(p => ref.includes(p)) && (!location.host || ref.includes(location.host));
+  if (navType !== 'reload' && (fromInternal || navType === 'back_forward')){ enter(); W.remove(); return; }
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const $ = s => document.getElementById(s);
+  const wait = ms => new Promise(r => setTimeout(r, ms));
+  const finishNow = () => {
+    W.classList.add('gone');
+    document.body.classList.remove('wlock-scroll');
+    enter();
+    setTimeout(() => W.remove(), 900);
+  };
+  if (reduce){ enter(); W.remove(); return; }
+  document.body.classList.add('wlock-scroll');
+
+  let started = false, skipped = false;
+
+  // build the desktop icons (My WeddingTech is the interactive one)
+  const ICONS = [
+    ['🖥️','This PC'],['🗑️','Recycle Bin'],['📁','Documents'],['🖼️','Pictures'],
+    ['🎵','Music'],['🎬','Videos'],['🌐','Microsoft Edge'],['🟢','Google Chrome'],
+    ['📘','Microsoft Word'],['📗','Microsoft Excel'],['📙','PowerPoint'],['📓','OneNote'],
+    ['📧','Outlook'],['👥','Teams'],['💬','Slack'],['MWT','My WeddingTech'],
+    ['⛏️','Minecraft'],['🎯','Valorant'],['💎','The Sims 4'],['🅅','GTA V']
+  ];
+  let mwtEl = null;
+  ICONS.forEach(([g, l]) => {
+    if (g === 'MWT') return;                              // rendered separately, centred
+    const d = document.createElement('div'); d.className = 'wic';
+    d.innerHTML = `<div class="gl">${g}</div><div class="lb">${l}</div>`;
+    $('wicons').appendChild(d);
+  });
+  // My WeddingTech app — centred on the desktop for a clear focal point
+  mwtEl = document.createElement('div');
+  mwtEl.className = 'wic mwt center';
+  mwtEl.innerHTML = '<div class="gl"></div><div class="lb">My WeddingTech</div>';
+  $('wdesk').appendChild(mwtEl);
+
+  // ---- audio (Web Audio synth — no external files) ----
+  let actx = null;
+  const A = () => { if (!actx){ try { actx = new (window.AudioContext || window.webkitAudioContext)(); } catch(_){} }
+    if (actx && actx.state === 'suspended') actx.resume(); return actx; };
+  function tone(freq, dur, type = 'sine', gain = 0.14, delay = 0){
+    const c = A(); if (!c) return;
+    const t = c.currentTime + delay, o = c.createOscillator(), g = c.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  // --- realistic noise-based clicks ---
+  let NOISE = null;
+  const getNoise = () => {
+    const c = A(); if (!c) return null;
+    if (!NOISE){ const len = Math.floor(c.sampleRate * 0.25);
+      NOISE = c.createBuffer(1, len, c.sampleRate);
+      const d = NOISE.getChannelData(0);
+      for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1; }
+    return NOISE;
+  };
+  function noiseBurst(t, freq, dur, gain, q = 1, type = 'bandpass'){
+    const c = A(), buf = getNoise(); if (!c || !buf) return;
+    const src = c.createBufferSource(); src.buffer = buf;
+    const bp = c.createBiquadFilter(); bp.type = type; bp.frequency.value = freq; bp.Q.value = q;
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.001);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    src.connect(bp).connect(g).connect(c.destination);
+    src.start(t, Math.random() * 0.12); src.stop(t + dur + 0.03);
+  }
+  function thump(t, freq, dur, gain){
+    const c = A(); if (!c) return;
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(freq, t); o.frequency.exponentialRampToValueAtTime(freq * 0.6, t + dur);
+    g.gain.setValueAtTime(0.0001, t); g.gain.linearRampToValueAtTime(gain, t + 0.002);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g).connect(c.destination); o.start(t); o.stop(t + dur + 0.02);
+  }
+  // mouse click = crisp press + softer release (mechanical two-part click)
+  const sClick = () => { const c = A(); if (!c) return; const t = c.currentTime;
+    noiseBurst(t, 2600, 0.022, 0.32, 0.7); thump(t, 170, 0.05, 0.17);
+    noiseBurst(t + 0.055, 2200, 0.018, 0.2, 0.7); thump(t + 0.055, 150, 0.04, 0.1); };
+  // keyboard key = short filtered tick + low "thock" body, slight variety per press
+  const sKey = () => { const c = A(); if (!c) return; const t = c.currentTime;
+    const f = 1500 + Math.random() * 800;
+    noiseBurst(t, f, 0.02, 0.24, 1.3); thump(t, 175 + Math.random() * 70, 0.035, 0.14); };
+  const sChime = () => { tone(523.25, 0.28, 'sine', 0.13); tone(659.25, 0.28, 'sine', 0.11, 0.09); tone(783.99, 0.5, 'sine', 0.11, 0.18); };
+  const sUnlock= () => { tone(880, 0.12, 'sine', 0.12); tone(1318.5, 0.3, 'sine', 0.1, 0.1); };
+  // professional airy transition swish (filtered noise, not a tonal sweep)
+  function sWhoosh(){
+    const c = A(), buf = getNoise(); if (!c || !buf) return;
+    const t = c.currentTime;
+    const src = c.createBufferSource(); src.buffer = buf; src.loop = true;
+    const bp = c.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 0.7;
+    bp.frequency.setValueAtTime(600, t);
+    bp.frequency.exponentialRampToValueAtTime(3200, t + 0.22);
+    bp.frequency.exponentialRampToValueAtTime(900, t + 0.5);
+    const g = c.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.linearRampToValueAtTime(0.11, t + 0.09);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+    src.connect(bp).connect(g).connect(c.destination);
+    src.start(t); src.stop(t + 0.52);
+  }
+
+  // ---- animated cursor ----
+  const cur = $('wcursor');
+  const moveTo = (el, ox = 0, oy = 0) => { const r = el.getBoundingClientRect();
+    cur.style.left = (r.left + r.width / 2 + ox) + 'px'; cur.style.top = (r.top + r.height / 2 + oy) + 'px'; };
+  const moveXY = (x, y) => { cur.style.left = x + 'px'; cur.style.top = y + 'px'; };
+  const clickFx = async () => { cur.classList.add('click'); sClick(); await wait(120); cur.classList.remove('click'); };
+
+  const scene = id => ['wlock','wdesk','wapp'].forEach(s => $(s).classList.toggle('on', s === id));
+
+  async function run(){
+    // Scene 1 — lock screen + Windows-Hello face unlock
+    sChime(); scene('wlock');
+    await wait(1400); if (skipped) return;
+    $('whello').textContent = 'Looking for you…';
+    $('wavatar').classList.add('scan');
+    await wait(1600); if (skipped) return;
+    sUnlock(); $('whello').textContent = 'Welcome';
+    await wait(700); if (skipped) return;
+
+    // Scene 2 — reveal the desktop beneath, then slide the lock up off it
+    $('wdesk').classList.add('on');
+    await wait(40);
+    $('wlock').style.transform = 'translateY(-100%)';
+    await wait(750); if (skipped) return;
+    $('wlock').classList.remove('on');
+    cur.classList.add('show');
+    moveXY(innerWidth * 0.74, innerHeight * 0.82);
+    await wait(500); if (skipped) return;
+    moveTo(mwtEl);
+    await wait(1000); if (skipped) return;
+    mwtEl.classList.add('sel');
+    await clickFx(); await wait(150); await clickFx();      // double-click
+    await wait(450); if (skipped) return;
+    $('wdesk').classList.add('launch'); sWhoosh();
+    await wait(650); if (skipped) return;
+
+    // Scene 3 — the app: click search, type the names, search
+    scene('wapp');
+    await wait(750); if (skipped) return;
+    moveTo($('wsearch'), -120, 0);
+    await wait(1000); if (skipped) return;
+    await clickFx();
+    $('wph').style.display = 'none';
+    $('wcaret').classList.add('on');
+    await wait(450); if (skipped) return;
+    const text = 'Kesavarajan Weds Reshma', typed = $('wtyped');
+    for (const ch of text){ typed.textContent += ch; sKey(); await wait(70 + Math.random() * 70); if (skipped) return; }
+    await wait(550); if (skipped) return;
+    moveTo($('wgo'));
+    await wait(850); if (skipped) return;
+    $('wsearch').classList.add('pressed'); await clickFx();
+    $('wcaret').classList.remove('on');
+    sWhoosh(); sUnlock();
+    await wait(500); if (skipped) return;
+    $('wapp').style.transform = 'scale(1.35)'; $('wapp').style.opacity = '0';
+    await wait(420);
+    finishNow();
+  }
+
+  // WeddingOS boot: type the system check, then reveal the START prompt
+  async function typeBoot(){
+    const out = $('wtermOut');
+    const cursor = document.createElement('span'); cursor.className = 'wterm-cursor';
+    const LINES = [
+      ['WeddingOS v2026.08.31', 'hd'],
+      ['', ''],
+      ['System Check...', 'dim'],
+      ['', ''],
+      ['✓ Bride Found', 'ok'],
+      ['✓ Groom Found', 'ok'],
+      ['✓ Families Connected', 'ok'],
+      ['✓ Blessings Loaded', 'ok'],
+      ['✓ Guests Awaiting...', 'ok']
+    ];
+    for (const [t, cls] of LINES){
+      const div = document.createElement('div'); if (cls) div.className = cls;
+      out.appendChild(div); div.appendChild(cursor);
+      if (cls === 'ok') await wait(180);                   // brief "checking…" pause before each ✓
+      for (const ch of t){ div.insertBefore(document.createTextNode(ch), cursor); await wait(cls === 'ok' ? 16 : 26); }
+      await wait(t ? 150 : 100);
+    }
+    cursor.remove();
+    $('wtermStart').classList.add('on');
+  }
+
+  const start = () => {
+    if (started) return; started = true; A(); sClick();    // START press
+    $('wstart').classList.add('hide');
+    run();
+  };
+  $('wstartBtn').addEventListener('click', start);
+  typeBoot();
+})();
+
 (function(){
   // floating quick-links menu
   const fab = document.getElementById('fab'), fabToggle = document.getElementById('fabToggle');
