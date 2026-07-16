@@ -1215,7 +1215,7 @@
     $('wph').style.display = 'none';
     $('wcaret').classList.add('on');
     await wait(450); if (skipped) return;
-    const text = 'Kesavarajan Weds Reshma', typed = $('wtyped');
+    const text = 'Kesav Weds Reshu', typed = $('wtyped');
     for (const ch of text){ typed.textContent += ch; sKey(); await wait(70 + Math.random() * 70); if (skipped) return; }
     await wait(550); if (skipped) return;
     moveTo($('wgo'));
@@ -1247,9 +1247,9 @@
     for (const [t, cls] of LINES){
       const div = document.createElement('div'); if (cls) div.className = cls;
       out.appendChild(div); div.appendChild(cursor);
-      if (cls === 'ok') await wait(180);                   // brief "checking…" pause before each ✓
-      for (const ch of t){ div.insertBefore(document.createTextNode(ch), cursor); await wait(cls === 'ok' ? 16 : 26); }
-      await wait(t ? 150 : 100);
+      if (cls === 'ok') await wait(120);                   // brief "checking…" pause before each ✓
+      for (const ch of t){ div.insertBefore(document.createTextNode(ch), cursor); await wait(cls === 'ok' ? 11 : 18); }
+      await wait(t ? 110 : 70);
     }
     cursor.remove();
     $('wtermStart').classList.add('on');
